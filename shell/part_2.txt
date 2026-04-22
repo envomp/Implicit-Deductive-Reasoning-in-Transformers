@@ -1,0 +1,14 @@
+# Usually, bidirectional models are first trained under masked objective, but we found it provides no further benefit.
+# Also, when we have custom shuffling where adversarial pairs are in same batch, then that didn't improve performance either.
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --custom_data_shuffle=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --do_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --custom_data_shuffle=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --do_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --custom_data_shuffle=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --do_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --smooth_cot=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --mixed_cot=True

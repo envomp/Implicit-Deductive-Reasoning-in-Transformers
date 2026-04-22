@@ -1,0 +1,28 @@
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --wd=0.05
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --wd=0.2
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --wd=0.4
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.0005
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.00005
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.00001
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.000005
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.000001
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --beta2=0.98
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --beta2=0.995
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --cot=True --beta2=0.999
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --wd=0.05
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --wd=0.2
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --wd=0.4
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --scheduler_lr_end=0.001
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --scheduler_lr_end=0.0005
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --scheduler_lr_end=0.0001
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --scheduler_lr_end=0.00005
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --scheduler_lr_end=0.00001
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --scheduler_lr_end=0.000005
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --beta2=0.98
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --beta2=0.995
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --beta2=0.999
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --batch_size=1000
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --corrective_cot=True --batch_size=250
+
+python3 -u train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.000001 --wd_on_lnorm=False
+python3 -u train_predicate_transformer.py --pickled_dataset=True --cot=True --scheduler_lr_end=0.000001 --dtype_str=bfloat16

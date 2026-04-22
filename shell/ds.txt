@@ -1,0 +1,4 @@
+python3 -u dataset/prepare_train_ds.py --distribution=rp --preserve_depth=True  --start_epoch=0 --epochs=15
+
+# LP trained model results not in paper for brevity
+python3 -u dataset/prepare_train_ds.py --distribution=lp --preserve_depth=False --start_epoch=0 --epochs=15

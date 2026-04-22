@@ -1,0 +1,88 @@
+# 2^4
+
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --direct=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --cot=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --corrective_cot=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --cot=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True
+
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --direct=True         --ffn_enabled=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --cot=True            --ffn_enabled=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --corrective_cot=True --ffn_enabled=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --ffn_enabled=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --cot=True            --ffn_enabled=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=True
+
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --direct=True         --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --cot=True            --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --corrective_cot=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --cot=True            --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True
+
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --direct=True         --ffn_enabled=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --cot=True            --ffn_enabled=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --corrective_cot=True --ffn_enabled=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --ffn_enabled=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --cot=True            --ffn_enabled=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=True --bidirectional_mask=True
+
+# baseline seed scan
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=True --bidirectional_mask=True --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --seed=125
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=True --bidirectional_mask=True --seed=125
+
+# scaling
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --epochs=30
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --epochs=60
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=16
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=24  --gradient_checkpointing=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=32  --gradient_checkpointing=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=48  --gradient_checkpointing=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=64  --gradient_checkpointing=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=96  --gradient_checkpointing=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=128 --gradient_checkpointing=True --gradient_accumulation=2
+
+# shallow
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --seed=125
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=4
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=4 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=4 --seed=125
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --dim=128
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --dim=128 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --dim=128 --seed=125
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --dim=512
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --dim=512 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=4 --dim=512 --seed=125
+
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --seed=125
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=2
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=2 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=2 --seed=125
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --dim=128
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --dim=128 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --dim=128 --seed=125
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --dim=512
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --dim=512 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --n_layers=2 --dim=512 --seed=125
+
+
+# some 8-layer models are reused from baseline seeds
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=128
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=128 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=128 --seed=125
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=512
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=512 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=512 --seed=125

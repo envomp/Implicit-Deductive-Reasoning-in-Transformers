@@ -1,0 +1,26 @@
+# Curriculum learning introduces complex training data sequentially. We compared random sampling (random curriculum)
+# against deterministic, repeated sampling (eager curriculum). When utilizing the r2 heuristic, the standard “no curriculum” approach
+# outperformed curriculum-based methods.
+
+# We also distinguish between random-cot, which samples the next step stochastically from all valid deductions, and
+# eager-cot, which deterministically selects the deduction from the first applicable rule in a fixed left-to-right traversal.
+# Eager selection combined with the r2 heuristic and no curriculum yielded the highest accuracy.
+
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=True                                             --solver_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=True                                             --solver_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=False --curriculum=True --curriculum_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=True  --curriculum=True --curriculum_eager=True  --solver_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=True  --curriculum=True --curriculum_eager=True  --solver_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=False --curriculum=True --curriculum_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=True  --curriculum=True --curriculum_eager=False --solver_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=True  --cot=True  --curriculum=True --curriculum_eager=False --solver_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=True                                             --solver_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=True                                             --solver_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=False --curriculum=True --curriculum_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=True  --curriculum=True --curriculum_eager=True  --solver_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=True  --curriculum=True --curriculum_eager=True  --solver_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=False --curriculum=True --curriculum_eager=False
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=True  --curriculum=True --curriculum_eager=False --solver_eager=True
+python3 -u training/train_predicate_transformer.py --heuristics_enabled=False --cot=True  --curriculum=True --curriculum_eager=False --solver_eager=False

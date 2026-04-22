@@ -1,0 +1,21 @@
+# predicate
+torch==2.9.0
+transformers==4.57.1
+datasets
+dataclasses_json
+orjson
+matplotlib
+einx
+einops
+
+# needed for hf models
+torchvision==0.24.0
+accelerate
+ninja
+packaging
+# pip install --no-binary=:all: mamba-ssm causal-conv1d --no-build-isolation
+mistral_common
+
+# visualization
+seaborn
+scikit-learn

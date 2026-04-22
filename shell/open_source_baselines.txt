@@ -1,0 +1,4 @@
+python3 -u baseline_gemma3_27b_hf.py
+python3 -u baseline_mistral32_24b_hf.py
+python3 -u baseline_qwen3_30b_hf.py
+python3 -u baseline_granite4_32b_hf.py

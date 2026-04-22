@@ -1,0 +1,255 @@
+EPOCH 0: len(train)=2794, len(validation)=14
+LOSS train 0.0676 lr [0.01] min gradient norm: 0.0008682316401973367 max gradient norm: 0.32295307517051697
+LOSS validation 0.0109
+
+positive predictions: 1347, negative predictions: 5641
+correct: 3502, false positive: 669, false negative: 2817, ood: 12
+correct by depth: {0: 522, 1: 524, 2: 515, 3: 498, 4: 486, 5: 491, 6: 466}
+incorrect by depth: {0: 476, 1: 474, 2: 484, 3: 500, 4: 510, 5: 508, 6: 534}
+positive predictions: 1476, negative predictions: 5506
+correct: 3543, false positive: 713, false negative: 2726, ood: 18
+correct by depth: {1: 509, 0: 529, 2: 500, 3: 512, 4: 511, 5: 487, 6: 495}
+incorrect by depth: {1: 486, 0: 469, 2: 498, 3: 486, 4: 488, 5: 510, 6: 502}
+positive predictions: 1376, negative predictions: 4497
+correct: 2733, false positive: 508, false negative: 2632, ood: 1127
+correct by depth: {0: 436, 1: 428, 2: 433, 3: 374, 4: 366, 5: 342, 6: 354}
+incorrect by depth: {0: 504, 1: 468, 2: 431, 3: 444, 4: 437, 5: 432, 6: 424}
+
+EPOCH 1: len(train)=2794, len(validation)=14
+LOSS train 0.0379 lr [0.009875893165300027] min gradient norm: 0.0026176448445767164 max gradient norm: 0.04833981394767761
+LOSS validation 0.0224
+
+positive predictions: 2290, negative predictions: 4694
+correct: 5367, false positive: 208, false negative: 1409, ood: 16
+correct by depth: {0: 975, 1: 842, 2: 815, 3: 756, 4: 685, 5: 672, 6: 622}
+incorrect by depth: {0: 21, 1: 157, 2: 185, 3: 243, 4: 312, 5: 324, 6: 375}
+positive predictions: 2258, negative predictions: 4719
+correct: 5330, false positive: 205, false negative: 1442, ood: 23
+correct by depth: {1: 844, 0: 984, 2: 814, 3: 748, 4: 694, 5: 630, 6: 616}
+incorrect by depth: {1: 153, 0: 14, 2: 184, 3: 247, 4: 303, 5: 365, 6: 381}
+positive predictions: 2332, negative predictions: 4648
+correct: 3603, false positive: 1106, false negative: 2271, ood: 20
+correct by depth: {0: 920, 1: 670, 2: 545, 3: 447, 4: 372, 5: 323, 6: 326}
+incorrect by depth: {0: 70, 1: 328, 2: 454, 3: 552, 4: 626, 5: 675, 6: 672}
+
+EPOCH 2: len(train)=2794, len(validation)=14
+LOSS train 0.0171 lr [0.009509795896116975] min gradient norm: 0.005466603208333254 max gradient norm: 0.02755866013467312
+LOSS validation 0.028
+
+positive predictions: 2560, negative predictions: 4439
+correct: 5835, false positive: 112, false negative: 1052, ood: 1
+correct by depth: {0: 996, 1: 855, 2: 886, 3: 832, 4: 781, 5: 744, 6: 741}
+incorrect by depth: {0: 3, 1: 145, 2: 114, 3: 168, 4: 219, 5: 256, 6: 259}
+positive predictions: 2443, negative predictions: 4557
+correct: 5577, false positive: 183, false negative: 1240, ood: 0
+correct by depth: {1: 864, 0: 985, 2: 839, 3: 777, 4: 731, 5: 687, 6: 694}
+incorrect by depth: {1: 136, 0: 15, 2: 161, 3: 223, 4: 269, 5: 313, 6: 306}
+positive predictions: 1787, negative predictions: 5210
+correct: 5094, false positive: 95, false negative: 1808, ood: 3
+correct by depth: {0: 988, 1: 853, 2: 801, 3: 682, 4: 617, 5: 577, 6: 576}
+incorrect by depth: {1: 147, 0: 9, 2: 199, 3: 318, 4: 383, 5: 423, 6: 424}
+
+EPOCH 3: len(train)=2794, len(validation)=14
+LOSS train 0.0143 lr [0.008920065838216749] min gradient norm: 0.005087385885417461 max gradient norm: 0.01857810840010643
+LOSS validation 0.0285
+
+positive predictions: 2790, negative predictions: 4209
+correct: 5950, false positive: 170, false negative: 879, ood: 1
+correct by depth: {0: 999, 1: 870, 2: 889, 3: 843, 4: 802, 5: 794, 6: 753}
+incorrect by depth: {1: 130, 2: 111, 3: 157, 0: 1, 4: 198, 5: 206, 6: 246}
+positive predictions: 2742, negative predictions: 4258
+correct: 5776, false positive: 233, false negative: 991, ood: 0
+correct by depth: {1: 886, 0: 970, 2: 874, 3: 809, 4: 795, 5: 728, 6: 714}
+incorrect by depth: {1: 114, 0: 30, 2: 126, 3: 191, 4: 205, 5: 272, 6: 286}
+positive predictions: 2086, negative predictions: 4913
+correct: 5459, false positive: 63, false negative: 1477, ood: 1
+correct by depth: {0: 988, 1: 876, 2: 850, 3: 761, 4: 700, 5: 663, 6: 621}
+incorrect by depth: {0: 11, 1: 124, 2: 150, 3: 239, 4: 300, 5: 337, 6: 379}
+
+EPOCH 4: len(train)=2794, len(validation)=14
+LOSS train 0.0132 lr [0.008136274519200732] min gradient norm: 0.004329029470682144 max gradient norm: 0.01651480235159397
+LOSS validation 0.028
+
+positive predictions: 2517, negative predictions: 4483
+correct: 5909, false positive: 54, false negative: 1037, ood: 0
+correct by depth: {0: 1000, 1: 869, 2: 888, 3: 831, 4: 795, 5: 770, 6: 756}
+incorrect by depth: {1: 131, 2: 112, 3: 169, 4: 205, 5: 230, 6: 244}
+positive predictions: 2479, negative predictions: 4521
+correct: 5805, false positive: 87, false negative: 1108, ood: 0
+correct by depth: {1: 879, 0: 984, 2: 881, 3: 823, 4: 772, 5: 735, 6: 731}
+incorrect by depth: {1: 121, 0: 16, 2: 119, 3: 177, 4: 228, 5: 265, 6: 269}
+positive predictions: 1712, negative predictions: 5288
+correct: 5176, false positive: 18, false negative: 1806, ood: 0
+correct by depth: {0: 990, 1: 867, 2: 804, 3: 712, 4: 654, 5: 587, 6: 562}
+incorrect by depth: {0: 10, 1: 133, 2: 196, 3: 288, 4: 346, 5: 413, 6: 438}
+
+EPOCH 5: len(train)=2794, len(validation)=14
+LOSS train 0.0125 lr [0.0071977245086319135] min gradient norm: 0.004380528349429369 max gradient norm: 0.014912476763129234
+LOSS validation 0.0283
+
+positive predictions: 2544, negative predictions: 4456
+correct: 5902, false positive: 71, false negative: 1027, ood: 0
+correct by depth: {0: 997, 1: 852, 2: 890, 3: 839, 4: 784, 5: 778, 6: 762}
+incorrect by depth: {1: 148, 2: 110, 3: 161, 0: 3, 4: 216, 5: 222, 6: 238}
+positive predictions: 2482, negative predictions: 4518
+correct: 5780, false positive: 101, false negative: 1119, ood: 0
+correct by depth: {1: 876, 0: 986, 2: 860, 3: 813, 4: 788, 5: 741, 6: 716}
+incorrect by depth: {1: 124, 0: 14, 2: 140, 3: 187, 4: 212, 5: 259, 6: 284}
+positive predictions: 1922, negative predictions: 5078
+correct: 5324, false positive: 49, false negative: 1627, ood: 0
+correct by depth: {0: 989, 1: 860, 2: 828, 3: 733, 4: 681, 5: 621, 6: 612}
+incorrect by depth: {0: 11, 1: 140, 2: 172, 3: 267, 4: 319, 5: 379, 6: 388}
+
+EPOCH 6: len(train)=2794, len(validation)=14
+LOSS train 0.0119 lr [0.006151478623083757] min gradient norm: 0.003802001941949129 max gradient norm: 0.01973094418644905
+LOSS validation 0.0301
+
+positive predictions: 2600, negative predictions: 4400
+correct: 5998, false positive: 51, false negative: 951, ood: 0
+correct by depth: {0: 999, 1: 880, 2: 892, 3: 844, 4: 814, 5: 792, 6: 777}
+incorrect by depth: {1: 120, 2: 108, 3: 156, 0: 1, 4: 186, 5: 208, 6: 223}
+positive predictions: 2610, negative predictions: 4390
+correct: 5906, false positive: 102, false negative: 992, ood: 0
+correct by depth: {1: 874, 0: 987, 2: 880, 3: 835, 4: 805, 5: 786, 6: 739}
+incorrect by depth: {1: 126, 0: 13, 2: 120, 3: 165, 4: 195, 5: 214, 6: 261}
+positive predictions: 1939, negative predictions: 5061
+correct: 5363, false positive: 38, false negative: 1599, ood: 0
+correct by depth: {0: 987, 1: 883, 2: 848, 3: 755, 4: 680, 5: 616, 6: 594}
+incorrect by depth: {1: 117, 0: 13, 2: 152, 3: 245, 4: 320, 5: 384, 6: 406}
+
+EPOCH 7: len(train)=2794, len(validation)=14
+LOSS train 0.0113 lr [0.005050000000000001] min gradient norm: 0.004238494671881199 max gradient norm: 0.0165934506803751
+LOSS validation 0.0307
+
+positive predictions: 2560, negative predictions: 4440
+correct: 5986, false positive: 37, false negative: 977, ood: 0
+correct by depth: {0: 996, 1: 890, 2: 892, 3: 840, 4: 802, 5: 793, 6: 773}
+incorrect by depth: {0: 4, 1: 110, 2: 108, 3: 160, 4: 198, 5: 207, 6: 227}
+positive predictions: 2510, negative predictions: 4490
+correct: 5838, false positive: 86, false negative: 1076, ood: 0
+correct by depth: {1: 892, 0: 986, 2: 879, 3: 821, 4: 794, 5: 746, 6: 720}
+incorrect by depth: {1: 108, 0: 14, 2: 121, 3: 179, 4: 206, 5: 254, 6: 280}
+positive predictions: 1938, negative predictions: 5062
+correct: 5382, false positive: 28, false negative: 1590, ood: 0
+correct by depth: {0: 991, 1: 905, 2: 848, 3: 745, 4: 674, 5: 628, 6: 591}
+incorrect by depth: {0: 9, 1: 95, 2: 152, 3: 255, 4: 326, 5: 372, 6: 409}
+
+EPOCH 8: len(train)=2794, len(validation)=14
+LOSS train 0.0108 lr [0.003948521376916245] min gradient norm: 0.00402931310236454 max gradient norm: 0.017630701884627342
+LOSS validation 0.0313
+
+positive predictions: 2717, negative predictions: 4283
+correct: 6073, false positive: 72, false negative: 855, ood: 0
+correct by depth: {0: 1000, 1: 888, 2: 906, 3: 869, 4: 818, 5: 816, 6: 776}
+incorrect by depth: {1: 112, 2: 94, 3: 131, 4: 182, 5: 184, 6: 224}
+positive predictions: 2703, negative predictions: 4297
+correct: 5941, false positive: 131, false negative: 928, ood: 0
+correct by depth: {1: 886, 0: 995, 2: 885, 3: 856, 4: 812, 5: 759, 6: 748}
+incorrect by depth: {1: 114, 0: 5, 2: 115, 3: 144, 4: 188, 5: 241, 6: 252}
+positive predictions: 2134, negative predictions: 4866
+correct: 5564, false positive: 35, false negative: 1401, ood: 0
+correct by depth: {0: 995, 1: 878, 2: 871, 3: 783, 4: 735, 5: 669, 6: 633}
+incorrect by depth: {0: 5, 1: 122, 2: 129, 3: 217, 4: 265, 5: 331, 6: 367}
+
+EPOCH 9: len(train)=2794, len(validation)=14
+LOSS train 0.0102 lr [0.0029022754913680883] min gradient norm: 0.004123763181269169 max gradient norm: 0.025987999513745308
+LOSS validation 0.0324
+
+positive predictions: 2690, negative predictions: 4310
+correct: 6108, false positive: 41, false negative: 851, ood: 0
+correct by depth: {0: 999, 1: 880, 2: 915, 3: 869, 4: 835, 5: 823, 6: 787}
+incorrect by depth: {0: 1, 1: 120, 2: 85, 3: 131, 4: 165, 5: 177, 6: 213}
+positive predictions: 2672, negative predictions: 4328
+correct: 5978, false positive: 97, false negative: 925, ood: 0
+correct by depth: {1: 881, 0: 991, 2: 890, 3: 853, 4: 821, 5: 785, 6: 757}
+incorrect by depth: {1: 119, 0: 9, 2: 110, 3: 147, 4: 179, 5: 215, 6: 243}
+positive predictions: 2115, negative predictions: 4885
+correct: 5573, false positive: 21, false negative: 1406, ood: 0
+correct by depth: {0: 994, 1: 878, 2: 872, 3: 800, 4: 743, 5: 673, 6: 613}
+incorrect by depth: {0: 6, 1: 122, 2: 128, 3: 200, 4: 257, 5: 327, 6: 387}
+
+EPOCH 10: len(train)=2794, len(validation)=14
+LOSS train 0.0096 lr [0.0019637254807992697] min gradient norm: 0.004373445175588131 max gradient norm: 0.019525371491909027
+LOSS validation 0.0325
+
+positive predictions: 2653, negative predictions: 4347
+correct: 6107, false positive: 23, false negative: 870, ood: 0
+correct by depth: {0: 1000, 1: 884, 2: 912, 3: 851, 4: 813, 5: 830, 6: 817}
+incorrect by depth: {1: 116, 2: 88, 3: 149, 4: 187, 5: 170, 6: 183}
+positive predictions: 2666, negative predictions: 4334
+correct: 6016, false positive: 75, false negative: 909, ood: 0
+correct by depth: {1: 874, 0: 996, 2: 891, 3: 842, 4: 845, 5: 799, 6: 769}
+incorrect by depth: {1: 126, 0: 4, 2: 109, 3: 158, 4: 155, 5: 201, 6: 231}
+positive predictions: 2191, negative predictions: 4809
+correct: 5645, false positive: 23, false negative: 1332, ood: 0
+correct by depth: {0: 993, 1: 875, 2: 887, 3: 816, 4: 751, 5: 691, 6: 632}
+incorrect by depth: {0: 7, 1: 125, 2: 113, 3: 184, 4: 249, 5: 309, 6: 368}
+
+EPOCH 11: len(train)=2794, len(validation)=14
+LOSS train 0.0091 lr [0.0011799341617832544] min gradient norm: 0.00426921620965004 max gradient norm: 0.01808939315378666
+LOSS validation 0.0337
+
+positive predictions: 2873, negative predictions: 4127
+correct: 6307, false positive: 33, false negative: 660, ood: 0
+correct by depth: {0: 1000, 1: 896, 2: 921, 3: 887, 4: 866, 5: 878, 6: 859}
+incorrect by depth: {1: 104, 2: 79, 3: 113, 4: 134, 5: 122, 6: 141}
+positive predictions: 3001, negative predictions: 3999
+correct: 6221, false positive: 140, false negative: 639, ood: 0
+correct by depth: {1: 914, 0: 999, 2: 901, 3: 886, 4: 869, 5: 833, 6: 819}
+incorrect by depth: {1: 86, 0: 1, 2: 99, 3: 114, 4: 131, 5: 167, 6: 181}
+positive predictions: 2402, negative predictions: 4598
+correct: 5822, false positive: 40, false negative: 1138, ood: 0
+correct by depth: {0: 989, 1: 883, 2: 899, 3: 830, 4: 794, 5: 734, 6: 693}
+incorrect by depth: {1: 117, 0: 11, 2: 101, 3: 170, 4: 206, 5: 266, 6: 307}
+
+EPOCH 12: len(train)=2794, len(validation)=14
+LOSS train 0.0085 lr [0.0005902041038830259] min gradient norm: 0.0044447192922234535 max gradient norm: 0.011508332565426826
+LOSS validation 0.036
+
+positive predictions: 2835, negative predictions: 4165
+correct: 6285, false positive: 25, false negative: 690, ood: 0
+correct by depth: {0: 1000, 1: 899, 2: 925, 3: 897, 4: 858, 5: 871, 6: 835}
+incorrect by depth: {1: 101, 2: 75, 3: 103, 4: 142, 5: 129, 6: 165}
+positive predictions: 2829, negative predictions: 4171
+correct: 6219, false positive: 55, false negative: 726, ood: 0
+correct by depth: {1: 902, 0: 997, 2: 911, 3: 887, 4: 877, 5: 835, 6: 810}
+incorrect by depth: {1: 98, 0: 3, 2: 89, 3: 113, 4: 123, 5: 165, 6: 190}
+positive predictions: 2340, negative predictions: 4660
+correct: 5802, false positive: 19, false negative: 1179, ood: 0
+correct by depth: {0: 994, 1: 898, 2: 893, 3: 847, 4: 790, 5: 717, 6: 663}
+incorrect by depth: {0: 6, 1: 102, 2: 107, 3: 153, 4: 210, 5: 283, 6: 337}
+
+EPOCH 13: len(train)=2794, len(validation)=14
+LOSS train 0.0082 lr [0.00022410683469997256] min gradient norm: 0.004302152432501316 max gradient norm: 0.011021404527127743
+LOSS validation 0.0379
+
+positive predictions: 2826, negative predictions: 4174
+correct: 6290, false positive: 18, false negative: 692, ood: 0
+correct by depth: {0: 1000, 1: 892, 2: 926, 3: 889, 4: 862, 5: 867, 6: 854}
+incorrect by depth: {1: 108, 2: 74, 3: 111, 4: 138, 5: 133, 6: 146}
+positive predictions: 2888, negative predictions: 4112
+correct: 6202, false positive: 93, false negative: 705, ood: 0
+correct by depth: {1: 899, 0: 999, 2: 906, 3: 870, 4: 875, 5: 833, 6: 820}
+incorrect by depth: {1: 101, 0: 1, 2: 94, 3: 130, 4: 125, 5: 167, 6: 180}
+positive predictions: 2435, negative predictions: 4565
+correct: 5891, false positive: 22, false negative: 1087, ood: 0
+correct by depth: {0: 989, 1: 906, 2: 913, 3: 861, 4: 798, 5: 740, 6: 684}
+incorrect by depth: {0: 11, 1: 94, 2: 87, 3: 139, 4: 202, 5: 260, 6: 316}
+
+EPOCH 14: len(train)=2794, len(validation)=14
+LOSS train 0.008 lr [0.0001] min gradient norm: 0.004231547005474567 max gradient norm: 0.01273688767105341
+LOSS validation 0.0392
+
+positive predictions: 2869, negative predictions: 4131
+correct: 6339, false positive: 15, false negative: 646, ood: 0
+correct by depth: {0: 1000, 1: 898, 2: 928, 3: 889, 4: 882, 5: 883, 6: 859}
+incorrect by depth: {1: 102, 2: 72, 3: 111, 4: 118, 5: 117, 6: 141}
+positive predictions: 2892, negative predictions: 4108
+correct: 6264, false positive: 64, false negative: 672, ood: 0
+correct by depth: {1: 911, 0: 1000, 2: 906, 3: 879, 4: 891, 5: 845, 6: 832}
+incorrect by depth: {1: 89, 2: 94, 3: 121, 4: 109, 5: 155, 6: 168}
+positive predictions: 2431, negative predictions: 4569
+correct: 5849, false positive: 41, false negative: 1110, ood: 0
+correct by depth: {0: 987, 1: 907, 2: 906, 3: 849, 4: 789, 5: 739, 6: 672}
+incorrect by depth: {1: 93, 0: 13, 2: 94, 3: 151, 4: 211, 5: 261, 6: 328}
+
