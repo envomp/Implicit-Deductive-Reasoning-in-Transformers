@@ -31,19 +31,3 @@ python3 -u training/train_predicate_transformer.py --pickled_dataset=True --trai
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --corrective_cot=True --ffn_enabled=True
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --direct=True --cot=True
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --direct=True --cot=True --ffn_enabled=True
-
-
-# sim
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=True  --bidirectional_mask=True --maintain_linear_separability=True --cskip=1
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --cskip=1
-
-# sim provability only
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=0.1 --wc=0.1
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=0.1 --wc=1.0
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=0.1 --wc=10.0
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=0.01 --wc=0.1
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=0.01 --wc=1.0
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=0.01 --wc=10.0
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=1.0 --wc=0.1
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=1.0 --wc=1.0
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=False --bidirectional_mask=True --maintain_linear_separability=True --propagate_provability=True --cskip=1 --wn=1.0 --wc=10.0

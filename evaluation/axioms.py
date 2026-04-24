@@ -114,17 +114,29 @@ def plot_justification_for_corrective(model, control_token_ids=[0, 10, 100], fil
 
     names = list(embeddings.keys())
     vecs = torch.stack(list(embeddings.values()))
+    norms = torch.norm(vecs, p=2, dim=1).numpy().reshape(1, -1)
     vecs_norm = F.normalize(vecs, p=2, dim=1)
     sim_matrix = torch.mm(vecs_norm, vecs_norm.t()).numpy()
+    global_vmin = min(np.min(norms), np.min(sim_matrix), -1.0)
+    global_vmax = max(np.max(norms), np.max(sim_matrix), 1.0)
 
     plt.style.use('seaborn-v0_8-whitegrid')
     plt.rcParams['pdf.fonttype'] = 42
     plt.rcParams['ps.fonttype'] = 42
-    plt.figure(figsize=(5, 4))
-    sns.heatmap(sim_matrix, xticklabels=names, yticklabels=names,
-                annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1)
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
+    fig = plt.figure(figsize=(5, 5))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 5], width_ratios=[20, 1], wspace=0.05)
+    ax_norm = fig.add_subplot(gs[0, 0])
+    ax_sim = fig.add_subplot(gs[1, 0])
+    cbar_ax = fig.add_subplot(gs[:, 1])
+
+    sns.heatmap(norms, ax=ax_norm, xticklabels=False, yticklabels=["L2 Norm  "],
+                annot=True, fmt=".2f", cmap="coolwarm", cbar=False,
+                vmin=global_vmin, vmax=global_vmax)
+    plt.setp(ax_norm.get_yticklabels(), rotation=0, va="center", ha="right")
+    sns.heatmap(sim_matrix, ax=ax_sim, xticklabels=names, yticklabels=names,
+                annot=True, fmt=".2f", cmap="coolwarm", cbar=True, cbar_ax=cbar_ax,
+                vmin=global_vmin, vmax=global_vmax)
+    plt.setp(ax_sim.get_xticklabels(), rotation=45, ha='right')
 
     if filename:
         plt.savefig(filename, format='pdf', bbox_inches='tight')
