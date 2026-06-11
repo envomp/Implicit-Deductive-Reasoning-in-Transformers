@@ -36,13 +36,16 @@ class ModelRepository:
 
         dim = 256
         n_layers = 8
+        n_heads = 4
         for tag in tags:
             if tag.startswith("dim="):
                 dim = int(tag.split("=")[1])
             elif tag.startswith("layers="):
                 n_layers = int(tag.split("=")[1])
+            elif tag.startswith("heads="):
+                n_heads = int(tag.split("=")[1])
 
-        model_args = self.args_builder({"ffn_enabled": is_ffn, "dim": dim, "n_layers": n_layers, "n_heads": 4,
+        model_args = self.args_builder({"ffn_enabled": is_ffn, "dim": dim, "n_layers": n_layers, "n_heads": n_heads,
                                         "bidirectional_stop_tokens": [cot_answer, direct_answer] if is_bidir else None,
                                         "universal_transformer": is_universal})
         print(f"Loading: {f_name} | tags: {tags} | ffn: {is_ffn} | dim: {dim}, L: {n_layers} | universal: {is_universal}")
