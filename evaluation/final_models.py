@@ -1211,5 +1211,5 @@ direct_30_scaling = {x:y for x, y in (raw_scores_baseline_deep_30 | raw_scores_s
 cot_30_scaling = {x:y for x, y in (raw_scores_baseline_deep_30 | raw_scores_scaling_deep_30).items() if x[1] == True}
 # plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="rp", compare="mode", cls="p30", curve="layers")
 # plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="lp", compare="mode", cls="p30", curve="layers")
-plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="rp", compare="mode", cls="p30", curve="heads")
-plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="lp", compare="mode", cls="p30", curve="heads")
+# plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="rp", compare="mode", cls="p30", curve="heads")
+# plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="lp", compare="mode", cls="p30", curve="heads")
