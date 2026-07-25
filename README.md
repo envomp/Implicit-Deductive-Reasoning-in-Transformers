@@ -1,7 +1,7 @@
 
 # Config
 
-`scripts/conf.py` contains `EXPERIMENTS_DIR` variable which should be set to the folder with the datasets and models
+`conf.py` contains `EXPERIMENTS_DIR` variable which should be set to the folder with the datasets and models
 
 ## Datasets
 
