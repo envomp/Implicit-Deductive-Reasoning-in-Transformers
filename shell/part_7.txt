@@ -26,8 +26,6 @@ python3 -u training/train_predicate_transformer.py --pickled_dataset=True --trai
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --universal_transformer=True --bidirectional_mask=True --ffn_enabled=True  --seed=125
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --universal_transformer=True --bidirectional_mask=True  --seed=125
 
-# embedding collapse ablation
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --corrective_cot=True
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --corrective_cot=True --ffn_enabled=True
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --direct=True --cot=True
-python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=lp --direct=True --cot=True --ffn_enabled=True
+# mixed curriculum ablation
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True --cot=True --bidirectional_mask=True
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True --cot=True --ffn_enabled=True --bidirectional_mask=True

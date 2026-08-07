@@ -113,7 +113,6 @@ def revert_rules_format(example):
 
 
 def process(dataset, max_length=None, expand=False, solver_include_copy=False, solver_eager=True, solver_order="facts_rules"):
-
     ds = []
     for elem in dataset:
         result = type_tokenize(elem, expand=expand, solver_include_copy=solver_include_copy, solver_eager=solver_eager, solver_order=solver_order)
@@ -206,36 +205,40 @@ def prepare_ds_train(raw_ds, rl_frac=0, custom_data_shuffle=False, corrective_co
     cot_count = 0
     direct_count = 0
     for data in raw_ds:
-        item = {"depth": data["depth"], "id": data["id"]}
 
         if random.random() < rl_frac:
             grpo_count += 1
-            item["extra_data"] = get_reward_info(data)
-            item["input_ids"] = data["input"]["ids"] + [cot_answer] + data["direct"]["ids"]
-            item["type_embeddings"] = data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"]
-            ds.append(item)
+            ds.append({"depth": data["depth"],
+                       "id": data["id"],
+                       "extra_data": get_reward_info(data),
+                       "input_ids": data["input"]["ids"] + [cot_answer] + data["direct"]["ids"],
+                       "type_embeddings": data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"]})
             continue
 
         if corrective_cot:
             corrective_cot_count += 1
-            item["input_ids"] = data["input"]["ids"] + [direct_answer] + data["direct"]["ids"] + [cot_answer] + data["cot"]["ids"]
-            item["type_embeddings"] = data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"] + [[null_e, task_e]] + data["cot"]["type_embeddings"]
-            item["labels"] = data["input"]["labels"] + [-100] + data["direct"]["labels"] + [-100] + data["cot"]["labels"]
-            ds.append(item)
+            ds.append({"depth": data["depth"],
+                       "id": data["id"],
+                       "input_ids": data["input"]["ids"] + [direct_answer] + data["direct"]["ids"] + [cot_answer] + data["cot"]["ids"],
+                       "type_embeddings": data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"] + [[null_e, task_e]] + data["cot"]["type_embeddings"],
+                       "labels": data["input"]["labels"] + [-100] + data["direct"]["labels"] + [-100] + data["cot"]["labels"]}
+                      )
 
         if cot:
             cot_count += 1
-            item["input_ids"] = data["input"]["ids"] + [cot_answer] + data["cot"]["ids"]
-            item["type_embeddings"] = data["input"]["type_embeddings"] + [[null_e, task_e]] + data["cot"]["type_embeddings"]
-            item["labels"] = data["input"]["labels"] + [-100] + data["cot"]["labels"]
-            ds.append(item)
+            ds.append({"depth": data["depth"],
+                       "id": data["id"],
+                       "input_ids": data["input"]["ids"] + [cot_answer] + data["cot"]["ids"],
+                       "type_embeddings": data["input"]["type_embeddings"] + [[null_e, task_e]] + data["cot"]["type_embeddings"],
+                       "labels": data["input"]["labels"] + [-100] + data["cot"]["labels"]})
 
         if direct:
             direct_count += 1
-            item["input_ids"] = data["input"]["ids"] + [direct_answer] + data["direct"]["ids"]
-            item["type_embeddings"] = data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"]
-            item["labels"] = data["input"]["labels"] + [-100] + data["direct"]["labels"]
-            ds.append(item)
+            ds.append({"depth": data["depth"],
+                       "id": data["id"],
+                       "input_ids": data["input"]["ids"] + [direct_answer] + data["direct"]["ids"],
+                       "type_embeddings": data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"],
+                       "labels": data["input"]["labels"] + [-100] + data["direct"]["labels"]})
 
     ds = finalize_ds(ds, custom_data_shuffle=custom_data_shuffle)
     print(f"counts> grpo={grpo_count} corrective_cot={corrective_cot_count} cot={cot_count} direct={direct_count}")
@@ -314,3 +317,19 @@ if __name__ == '__main__':
     assert cp0["input"]["ids"] + cp0["cot"]["ids"] == [0, 1, 1, 2, 3, 0, 1, 2]
     assert cp0["input"]["labels"] + cp0["cot"]["labels"] == [-100, -100, -100, -100, 0, 1, 2, 211]
     assert cp0["input"]["type_embeddings"] + cp0["cot"]["type_embeddings"] == [[0, 1], [0, 1], [3, 4], [3, 5], [0, 2], [0, 1], [0, 1], [0, 1]]
+
+    mixed_ds = prepare_ds_train([qp0], cot=True, direct=True, corrective_cot=True)
+    assert id(mixed_ds[0]) != id(mixed_ds[1])
+    assert id(mixed_ds[1]) != id(mixed_ds[2])
+    assert id(mixed_ds[0]) != id(mixed_ds[2])
+
+    has_cot, has_direct, has_corrective = False, False, False
+    for item in mixed_ds:
+        ids = item["input_ids"]
+        if direct_answer in ids and cot_answer in ids:
+            has_corrective = True
+        elif cot_answer in ids:
+            has_cot = True
+        elif direct_answer in ids:
+            has_direct = True
+    assert has_cot and has_direct and has_corrective
