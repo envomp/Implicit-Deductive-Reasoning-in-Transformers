@@ -125,9 +125,11 @@ def log_forward_constructor(self, ini=False, attn=False, hidden=False):
 # ]
 # select_by = lambda x: {y: x for y in range(7)}
 # calibration_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["train_rp_balanced_downsampled"], eager=False, select_by_depth=select_by(1_000))), is_cot=False)
-# validation_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["validation_rp_balanced"], select_by_depth=select_by(1000))), is_cot=False)
+# validation_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["validation_rp_balanced"], select_by_depth=select_by(1_000))), is_cot=False)
 # accumulated_type_similarity = defaultdict(list)
-# accumulated_uncurved_similarity = defaultdict(list)
+# accumulated_other_similarity = defaultdict(list)
+# accumulated_aligned_type_similarity = defaultdict(list)
+# accumulated_aligned_other_similarity = defaultdict(list)
 #
 # for evaluation in evaluations:
 #     entry = repo.get_entry(*evaluation)
@@ -137,35 +139,77 @@ def log_forward_constructor(self, ini=False, attn=False, hidden=False):
 #
 #     eval_name = "_".join(sorted(evaluation))
 #     model = entry.model.cuda().eval()
-#     manifold_changes = compute_procrustes_and_similarity(model, calibration_ds, initial_embeddings, hidden_states)
-#     uncurved_type_similarity = inspect_rotated_linearity(model, validation_ds, manifold_changes, initial_embeddings, hidden_states)
-#     type_similarity = inspect_linearity(model, validation_ds, initial_embeddings, hidden_states)
-#     for t_id, similarities in type_similarity.items():
+#     manifold_changes = compute_procrustes_and_similarity(model, calibration_ds, initial_embeddings, hidden_states, target_layer_idx=0)
+#     aligned_type_sim, aligned_other_sim = inspect_linearity(model, validation_ds, manifold_changes, initial_embeddings, hidden_states)
+#     type_sim, other_sim = inspect_linearity(model, validation_ds, None, initial_embeddings, hidden_states)
+#
+#     for t_id, similarities in type_sim.items():
 #         accumulated_type_similarity[t_id].append(similarities)
-#     for t_id, similarities in uncurved_type_similarity.items():
-#         accumulated_uncurved_similarity[t_id].append(similarities)
+#     for t_id, similarities in other_sim.items():
+#         accumulated_other_similarity[t_id].append(similarities)
+#
+#     for t_id, similarities in aligned_type_sim.items():
+#         accumulated_aligned_type_similarity[t_id].append(similarities)
+#     for t_id, similarities in aligned_other_sim.items():
+#         accumulated_aligned_other_similarity[t_id].append(similarities)
 #
 #     for block in entry.model.layers:
 #         block.forward = block.old_forward
 #
-# avg_type_similarity = {t_id: np.mean(np.array(sims), axis=0) for t_id, sims in accumulated_type_similarity.items()}
-# avg_uncurved_similarity = {t_id: np.mean(np.array(sims), axis=0) for t_id, sims in accumulated_uncurved_similarity.items()}
+# avg_type_sim = {t_id: np.mean(np.array(sims), axis=0) for t_id, sims in accumulated_type_similarity.items()}
+# avg_other_sim = {t_id: np.mean(np.array(sims), axis=0) for t_id, sims in accumulated_other_similarity.items()}
+# avg_uncurved_sim = {t_id: np.mean(np.array(sims), axis=0) for t_id, sims in accumulated_aligned_type_similarity.items()}
+# avg_uncurved_other_sim = {t_id: np.mean(np.array(sims), axis=0) for t_id, sims in accumulated_aligned_other_similarity.items()}
 # filename_type = f"type_similarity_{eval_name}.pdf"
-# visualize_type_similarity(avg_type_similarity, avg_uncurved_similarity, filename=filename_type)
+# visualize_type_similarity(avg_type_sim, avg_other_sim, avg_uncurved_sim, avg_uncurved_other_sim, filename=filename_type)
+
+# # Appendix: Superposition hypothesis - visualizing predicates
+# evaluations = [
+#     frozenset({"rp", "corrective", "r2", "bidir"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=16"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=32"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=64"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=128"})
+# ]
+# select_by = lambda x: {y: x for y in range(7)}
+# calibration_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["train_rp_balanced_downsampled"], eager=False, select_by_depth=select_by(1_000))), is_cot=False)
+# validation_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["validation_rp_balanced"], select_by_depth=select_by(1_000))), is_cot=False)
+# target_tokens = [1, 10, 100]
+# unaligned_tokens = defaultdict(list)
+# aligned_tokens = defaultdict(list)
+# for evaluation in evaluations:
+#     entry = repo.get_entry(*evaluation)
+#     for block in entry.model.layers:
+#         block.old_forward = block.forward
+#         block.forward = log_forward_constructor(block, ini=True, hidden=True)
+#
+#     eval_name = "_".join(sorted(evaluation))
+#     model = entry.model.cuda().eval()
+#     manifold_changes = compute_procrustes_and_similarity(model, calibration_ds, initial_embeddings, hidden_states, target_layer_idx=0)
+#     unaligned_trajs = inspect_token_linearity(model, validation_ds, None, initial_embeddings, hidden_states, target_tokens)
+#     aligned_trajs = inspect_token_linearity(model, validation_ds, manifold_changes, initial_embeddings, hidden_states, target_tokens)
+#     for t_id in target_tokens:
+#         unaligned_tokens[t_id].extend(unaligned_trajs[t_id])
+#         aligned_tokens[t_id].extend(aligned_trajs[t_id])
+#
+#     for block in entry.model.layers:
+#         block.forward = block.old_forward
+#
+# visualize_combined_trajectories(unaligned_tokens, aligned_tokens, target_tokens, filename=f"rp_token_similarity.pdf")
 
 # # Identifying the successful approximation
 # aggregated_results = {}
 # for evaluation in [
-#     # frozenset({"rp", "corrective", "r2", "bidir"}),
-#     # frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=16"}),
-#     # frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=32"}),
-#     # frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=64"})
-#     # frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=128"})
+#     frozenset({"rp", "corrective", "r2", "bidir"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=16"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=32"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=64"}),
+#     frozenset({"rp", "corrective", "r2", "bidir", "scaling", "layers=128"})
 # ]:
 #     for eval_ds in ["validation_rp_balanced_deep_30_pred", "validation_rp_balanced_deep_60_pred", "validation_lp_balanced_deep_30_pred", "validation_lp_balanced_deep_60_pred"]:
 #         model_name = " + ".join(evaluation)
 #         select_by = lambda x: {y: x for y in range(7)}
-#         calibration_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["train_rp_balanced_downsampled"], eager=False, select_by_depth=select_by(100))), is_cot=False)
+#         calibration_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict["train_rp_balanced_downsampled"], eager=False, select_by_depth=select_by(1_000))), is_cot=False)
 #         validation_ds = prepare_ds_inference(process(train_curriculum(full_dataset_dict[eval_ds], select_by_depth=select_by(1_000))), is_cot=False)
 #         entry = repo.get_entry(*evaluation)
 #         for block in entry.model.layers:
@@ -175,7 +219,7 @@ def log_forward_constructor(self, ini=False, attn=False, hidden=False):
 #
 #         for curve_manifold in [True, False]:
 #             if curve_manifold:
-#                 manifold_changes = compute_procrustes_scipy(model, calibration_ds, initial_embeddings, hidden_states, target_layer_idx=-1)
+#                 manifold_changes = compute_procrustes_and_similarity(model, calibration_ds, initial_embeddings, hidden_states, target_layer_idx=-1)
 #                 linear_probe = ZeroShotDecisionProbe(model, manifold_changes)
 #             else:
 #                 linear_probe = ZeroShotDecisionProbe(model, None)

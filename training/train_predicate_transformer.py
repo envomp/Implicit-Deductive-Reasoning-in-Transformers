@@ -10,7 +10,7 @@ from training.train_loop import *
 from training.adamw import AdamW
 from training.rl import get_grpo_loss, get_flowrl_loss, PartitionZ
 from training.curriculum import calculate_sample_distribution
-from dataset.processor import process, train_curriculum, pad, prepare_ds_train, prepare_ds_inference, direct_answer, cot_answer, special_tokens
+from dataset.processor import process, train_curriculum, pad, prepare_ds_train, prepare_ds_inference, direct_answer, cot_answer, special_tokens, reduce_ds
 from dataset.data_preprocessing import pad_collate
 from dataset.eval import eval_model
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -38,6 +38,8 @@ gradient_accumulation = 1
 train_distribution = "lp"
 pickled_dataset = False
 pickled_dataset_files = 15
+dataset_fraction = 1.0
+
 heuristics_enabled = True
 heuristic_placement = "append"
 solver_include_copy = False
@@ -138,12 +140,15 @@ def ds_loader(ds, epoch, is_train):
         data_dir = EXPERIMENTS_DIR + f"/datasets/predicate_logic/train/700k/eager_bulk_{train_distribution}_v2/"
         with gzip.open(data_dir + f"epoch={epoch % pickled_dataset_files}.pickle.gzip", 'rb') as f:
             raw_ds = pickle.load(f)
-        ds = prepare_ds_train(raw_ds, rl_frac=get_rl_frac(epoch), custom_data_shuffle=custom_data_shuffle, corrective_cot=corrective_cot, cot=cot, direct=direct)
+        ds = reduce_ds(raw_ds, dataset_fraction)
+        ds = prepare_ds_train(ds, rl_frac=get_rl_frac(epoch), custom_data_shuffle=custom_data_shuffle, corrective_cot=corrective_cot, cot=cot, direct=direct)
     else:
         select_by_depth = calculate_sample_distribution(epoch_samples=len(depths) * 100_000, current_depth=current_depth, max_depth=len(depths) - 1) if curriculum else None
         print(f"epoch: {epoch} current_depth: {current_depth} select_by_depth: {select_by_depth}")
         ds = train_curriculum(ds, select_by_depth=select_by_depth, eager=curriculum_eager, heuristics=heuristics, heuristic_placement=heuristic_placement, balance=True, preserve_depth="RP" in train_distribution.upper())
         ds = process(ds, max_length=1024, solver_include_copy=solver_include_copy, solver_eager=solver_eager)
+        if is_train:
+            ds = reduce_ds(ds, dataset_fraction)
         ds = prepare_ds_train(ds, rl_frac=get_rl_frac(epoch), custom_data_shuffle=custom_data_shuffle, corrective_cot=corrective_cot, cot=cot, direct=direct)
 
     return DataLoader(ds, shuffle=not custom_data_shuffle and is_train, batch_size=batch_size // gradient_accumulation,
@@ -293,7 +298,7 @@ def construct_run_id():
     _wd = (f"-lnorm" if not wd_on_lnorm else "") + (f"-2d" if not wd_on_2d else "")
     _optimizer = f"_optimizer=lr{lr_start}-{scheduler_lr_end}"
     _optimizer += f"b2{adamw_beta2}wd{wd}{_wd}"
-    _dataset = f"_dataset={",".join(dataset_flags)}"
+    _dataset = f"_dataset={",".join(dataset_flags)}" + ("" if dataset_fraction >= 1 else f"f{dataset_fraction}")
     _solver = f"_solver={",".join(solver_flags)}" if solver_flags else ""
     _rl = f"_grpo={grpo_enabled}_flowrl={flowrl_enabled}_T={rl_token_level}_S={rl_sparse_reward}_n={rl_n_samples}_b={rl_batch_size}" if rl_enabled else ""
     run_id = f"{train_distribution}_adamw{_model}{_ffn}{_lnorm}{_universal}{_bidirectional}{_optimizer}{_dataset}{_solver}{_rl}_epochs={epochs}_seed={seed}_dtype={dtype_str}"

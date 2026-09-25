@@ -198,11 +198,11 @@ def generate_latex_table_str(sub_df, caption, label_tag, present_domains, highli
     )
 
 
-def generate_main_tables(scores_30, scores_60):
+def generate_main_tables(scores_30, scores_60, methods=['direct', 'cot']):
     pivot_df, present_domains = process_and_pivot(scores_30, scores_60)
     latex_tables = []
 
-    for method in ['direct', 'cot']:
+    for method in methods:
         for train_domain in ['RP']:
             sub_df = pivot_df.xs((method, train_domain), level=['method', 'train_domain'])
             sorted_index = sorted(sub_df.index, key=get_sort_key)
@@ -214,7 +214,7 @@ def generate_main_tables(scores_30, scores_60):
 
     return "\n\n".join(latex_tables)
 
-def filter_scaling_scores(raw_scores):
+def filter_scaling_scores(raw_scores, take_layers=None):
     filtered = {}
     for key, vals in raw_scores.items():
         remainder = [str(x).lower() for x in key[2:]]
@@ -223,6 +223,10 @@ def filter_scaling_scores(raw_scores):
         has_heads = any(x.startswith('heads=') for x in remainder)
         if has_scaling and not has_layers or has_heads:
             continue
+        if take_layers is not None and has_layers:
+            layers_val = int(next((x for x in remainder if x.startswith('layers=')), None).split('=')[1])
+            if layers_val not in take_layers:
+                continue
         new_key = list(key)
         if not has_scaling:
             new_key.append('layers=8')
@@ -508,6 +512,86 @@ def generate_universal_appendix(baseline_30, baseline_60, universal_30, universa
         present_domains=present_domains
     )
     return latex1 + "\n\n" + latex2
+
+def generate_r2_ablation_tables(r2_impact_30, r2_impact_60):
+    pivot_df, present_domains = process_and_pivot(r2_impact_30, r2_impact_60)
+    pivot_df_clean = pivot_df.reset_index(level='label', drop=True)
+    mean_df, std_df = get_aggregated_stats(pivot_df_clean)
+
+    def format_diff_row(diff_list, row_label, columns):
+        raw_differences = np.array(diff_list)
+        k_pairs = len(raw_differences)
+        mean_diff = np.mean(raw_differences, axis=0)
+        std_diff = np.std(raw_differences, axis=0, ddof=1) if k_pairs > 1 else np.zeros(raw_differences.shape[1])
+        formatted_cells = []
+        df = k_pairs - 1
+        critical_t = stats.t.ppf(1 - 0.05, df) if df > 0 else float('inf')
+        for m, s, col in zip(mean_diff, std_diff, columns):
+            cell_text = f"{m:.1f} \\pm {s:.1f}"
+            t_stat = (m / (s / math.sqrt(k_pairs))) if s > 0 else 0
+            if df > 0:
+                if t_stat > critical_t:
+                    cell_text = f"\\textcolor{{green!70!black}}{{{cell_text}}}"
+            formatted_cells.append(cell_text)
+        return pd.Series(formatted_cells, index=columns, name=(row_label,))
+
+    def get_seed_data(target_clean_idx):
+        res = {}
+        for idx, row in pivot_df.iterrows():
+            idx_method, idx_domain, idx_label, idx_tags = idx
+            clean_tags = frozenset(t for t in idx_tags if 'seed' not in str(t).lower())
+            current_clean_idx = (idx_method, idx_domain, clean_tags)
+            if current_clean_idx == target_clean_idx:
+                import re
+                match = re.search(r'seed(\d+)', str(idx_label).lower())
+                seed = f"seed{match.group(1)}" if match else "no_seed"
+                res[seed] = row.values
+        return res
+
+    def get_base_row(idx, name):
+        m = mean_df.loc[idx]
+        s = std_df.loc[idx]
+        cells = [f"{mean_val:.1f} \\pm {std_val:.1f}" for mean_val, std_val in zip(m, s)]
+        return pd.Series(cells, index=mean_df.columns, name=(name,))
+
+    latex_tables = []
+    configs = {}
+    for idx in mean_df.index:
+        method, train_domain, tags = idx
+        config_key = (method, train_domain)
+        if config_key not in configs:
+            configs[config_key] = {'nor2': None, 'r2half': None, 'baseline': None}
+
+        if 'nor2' in tags:
+            configs[config_key]['nor2'] = idx
+        elif 'r2half' in tags:
+            configs[config_key]['r2half'] = idx
+        else:
+            configs[config_key]['baseline'] = idx
+
+    for (method, train_domain), models in configs.items():
+        idx_nor2 = models['nor2']
+        idx_r2half = models['r2half']
+        idx_baseline = models['baseline']
+        table_rows = [get_base_row(idx_nor2, "nor2"), get_base_row(idx_r2half, "r2half"), get_base_row(idx_baseline, "baseline")]
+
+        d_nor2 = get_seed_data(idx_nor2)
+        d_r2 = get_seed_data(idx_r2half)
+        common_r2 = set(d_nor2.keys()) & set(d_r2.keys())
+        diffs = [d_r2[s] - d_nor2[s] for s in common_r2]
+        table_rows.append(format_diff_row(diffs, r"$\Delta$ (r2half - nor2)", pivot_df.columns))
+
+        d_base = get_seed_data(idx_baseline)
+        common_base = set(d_nor2.keys()) & set(d_base.keys())
+        diffs = [d_base[s] - d_nor2[s] for s in common_base]
+        table_rows.append(format_diff_row(diffs, r"$\Delta$ (baseline - nor2)", pivot_df.columns))
+
+        df_table = pd.DataFrame(table_rows)
+        caption = f"Impact of R2 Selection: {str(method).upper()} model on {train_domain}. One-tailed t-test (p < 0.05)."
+        label_tag = f"tab:r2_ablation_{method}"
+        latex_tables.append(generate_latex_table_str(df_table, caption, label_tag, present_domains))
+
+    return "\n\n".join(latex_tables)
 
 
 def process_grouped_scores(raw_scores, step_index=6, min_layers=0):
@@ -1005,18 +1089,17 @@ def plot_scaling_curves(data_30, data_60, max_depth=12, eval="lp", compare="pred
     def get_model_info(key):
         if not (key[0] == eval):
             return None
-        if "scaling" not in key:
-            return "$L = 8$" if curve == "layers" else ("$H = 4$" if curve == "heads" else None)
+        name = "$L = 8$" if curve == "layers" else ("$H = 4$" if curve == "heads" else None)
         for item in key:
             if curve == "layers" and isinstance(item, str) and item.startswith("layers="):
                 ls = item.split('=')[1]
                 if ls in ["16", "32", "64", "128"]:
-                    return f"$L = {ls}$"
+                    name = f"$L = {ls}$"
             if curve == "heads" and isinstance(item, str) and item.startswith("heads="):
                 ls = item.split('=')[1]
                 if ls in ["6", "8", "11", "16"]:
-                    return f"$H = {ls}$"
-        return None
+                    name = f"$H = {ls}$"
+        return name
 
     all_models = set()
     for data, _, _ in datasets:
@@ -1056,6 +1139,11 @@ def plot_scaling_curves(data_30, data_60, max_depth=12, eval="lp", compare="pred
         handles_styles = [
             mlines.Line2D([], [], color='gray', linestyle='-', marker='o', label=r'$N_{pred} \leq 30$'),
             mlines.Line2D([], [], color='gray', linestyle='--', marker='x', label=r'$N_{pred} \leq 60$')
+        ]
+    elif compare == "corrective":
+        handles_styles = [
+            mlines.Line2D([], [], color='gray', linestyle='-', marker='o', label=r'direct only'),
+            mlines.Line2D([], [], color='gray', linestyle='--', marker='x', label=r'direct w. corrective')
         ]
 
     ax.axvline(x=6.5, color='gray', linestyle='--', linewidth=1.5, alpha=0.7)
@@ -1182,7 +1270,21 @@ raw_scores_rl_deep_30= {('lp', True, 'rp', 'flowrl'): {0: 0.999, 1: 0.993, 2: 0.
 raw_scores_mixed_deep_30= {('lp', False, 'r2', 'corrective', 'bidir', 'rp'): {0: 1.0, 1: 0.996, 2: 0.972, 3: 0.91, 4: 0.794, 5: 0.708, 6: 0.62, 7: 0.619, 8: 0.623, 9: 0.624, 10: 0.617, 11: 0.649, 12: 0.631}, ('lp_star', False, 'r2', 'corrective', 'bidir', 'rp'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.994, 4: 0.978, 5: 0.923, 6: 0.886, 7: 0.863, 8: 0.843, 9: 0.849, 10: 0.814, 11: 0.805, 12: 0.792}, ('rp', False, 'r2', 'corrective', 'bidir', 'rp'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.998, 4: 0.983, 5: 0.974, 6: 0.936, 7: 0.902, 8: 0.813, 9: 0.757, 10: 0.657, 11: 0.644, 12: 0.604}, ('lp', True, 'r2', 'corrective', 'bidir', 'rp'): {0: 1.0, 1: 1.0, 2: 0.998, 3: 0.991, 4: 0.969, 5: 0.952, 6: 0.909, 7: 0.906, 8: 0.897, 9: 0.875, 10: 0.86, 11: 0.835, 12: 0.852}, ('lp_star', True, 'r2', 'corrective', 'bidir', 'rp'): {0: 1.0, 1: 0.996, 2: 0.999, 3: 0.998, 4: 0.996, 5: 0.997, 6: 0.992, 7: 0.99, 8: 0.984, 9: 0.993, 10: 0.986, 11: 0.987, 12: 0.986}, ('rp', True, 'r2', 'corrective', 'bidir', 'rp'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 0.998, 5: 1.0, 6: 0.996, 7: 0.995, 8: 0.988, 9: 0.981, 10: 0.965, 11: 0.95, 12: 0.928}, ('lp', False, 'r2', 'bidir', 'direct', 'rp'): {0: 1.0, 1: 0.734, 2: 0.626, 3: 0.588, 4: 0.556, 5: 0.533, 6: 0.556, 7: 0.546, 8: 0.552, 9: 0.543, 10: 0.539, 11: 0.527, 12: 0.524}, ('lp_star', False, 'r2', 'bidir', 'direct', 'rp'): {0: 1.0, 1: 0.927, 2: 0.746, 3: 0.66, 4: 0.63, 5: 0.604, 6: 0.578, 7: 0.583, 8: 0.565, 9: 0.554, 10: 0.547, 11: 0.518, 12: 0.54}, ('rp', False, 'r2', 'bidir', 'direct', 'rp'): {0: 1.0, 1: 0.904, 2: 0.868, 3: 0.816, 4: 0.785, 5: 0.751, 6: 0.705, 7: 0.73, 8: 0.74, 9: 0.754, 10: 0.692, 11: 0.715, 12: 0.74}, ('lp', True, 'cot', 'bidir', 'r2', 'rp'): {0: 1.0, 1: 0.994, 2: 0.993, 3: 0.968, 4: 0.91, 5: 0.845, 6: 0.811, 7: 0.8, 8: 0.762, 9: 0.765, 10: 0.755, 11: 0.758, 12: 0.735}, ('lp_star', True, 'cot', 'bidir', 'r2', 'rp'): {0: 1.0, 1: 0.998, 2: 0.996, 3: 0.994, 4: 0.99, 5: 0.988, 6: 0.989, 7: 0.977, 8: 0.972, 9: 0.964, 10: 0.958, 11: 0.954, 12: 0.96}, ('rp', True, 'cot', 'bidir', 'r2', 'rp'): {0: 1.0, 1: 1.0, 2: 0.999, 3: 0.998, 4: 0.994, 5: 0.986, 6: 0.976, 7: 0.964, 8: 0.954, 9: 0.931, 10: 0.894, 11: 0.877, 12: 0.839}, ('lp', False, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.999, 1: 0.993, 2: 0.97, 3: 0.908, 4: 0.8, 5: 0.69, 6: 0.614, 7: 0.613, 8: 0.589, 9: 0.554, 10: 0.581, 11: 0.568, 12: 0.575}, ('lp_star', False, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.998, 1: 1.0, 2: 1.0, 3: 0.997, 4: 0.982, 5: 0.948, 6: 0.909, 7: 0.871, 8: 0.844, 9: 0.851, 10: 0.837, 11: 0.806, 12: 0.803}, ('rp', False, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 1.0, 1: 1.0, 2: 0.996, 3: 0.996, 4: 0.986, 5: 0.969, 6: 0.946, 7: 0.914, 8: 0.868, 9: 0.784, 10: 0.702, 11: 0.673, 12: 0.633}, ('lp', True, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 1.0, 1: 0.998, 2: 0.996, 3: 0.979, 4: 0.933, 5: 0.878, 6: 0.832, 7: 0.829, 8: 0.763, 9: 0.744, 10: 0.707, 11: 0.669, 12: 0.659}, ('lp_star', True, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.995, 1: 0.997, 2: 0.999, 3: 1.0, 4: 0.998, 5: 0.989, 6: 0.984, 7: 0.978, 8: 0.978, 9: 0.964, 10: 0.963, 11: 0.962, 12: 0.958}, ('rp', True, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 1.0, 1: 1.0, 2: 0.999, 3: 1.0, 4: 0.997, 5: 0.994, 6: 0.983, 7: 0.979, 8: 0.96, 9: 0.946, 10: 0.901, 11: 0.902, 12: 0.87}}
 # print("raw_scores_mixed_deep_60=", get_raw_scores([repo.get_entry('rp', 'corrective', 'r2', 'bidir'), repo.get_entry('rp', 'direct', 'r2', 'bidir'), repo.get_entry('rp', 'cot', 'r2', 'bidir'), repo.get_entry('rp', 'direct', 'cot', 'r2', 'bidir')], pred_count=60))
 raw_scores_mixed_deep_60= {('lp', False, 'bidir', 'corrective', 'r2', 'rp'): {0: 1.0, 1: 0.991, 2: 0.929, 3: 0.83, 4: 0.73, 5: 0.631, 6: 0.552, 8: 0.553, 7: 0.553, 9: 0.55, 10: 0.551, 11: 0.569, 12: 0.546}, ('lp_star', False, 'bidir', 'corrective', 'r2', 'rp'): {0: 0.998, 1: 0.999, 2: 0.997, 3: 0.966, 4: 0.9, 5: 0.803, 6: 0.766, 7: 0.747, 8: 0.745, 9: 0.737, 10: 0.721, 11: 0.73, 12: 0.73}, ('rp', False, 'bidir', 'corrective', 'r2', 'rp'): {0: 0.998, 1: 1.0, 2: 0.997, 3: 0.988, 4: 0.965, 5: 0.94, 6: 0.896, 7: 0.866, 8: 0.816, 9: 0.75, 10: 0.71, 11: 0.678, 12: 0.676}, ('lp', True, 'bidir', 'corrective', 'r2', 'rp'): {0: 1.0, 1: 0.983, 2: 0.965, 3: 0.919, 4: 0.843, 5: 0.768, 6: 0.696, 8: 0.62, 7: 0.69, 9: 0.606, 10: 0.592, 11: 0.576, 12: 0.567}, ('lp_star', True, 'bidir', 'corrective', 'r2', 'rp'): {0: 0.996, 1: 0.987, 2: 0.984, 3: 0.962, 4: 0.933, 5: 0.901, 6: 0.869, 7: 0.857, 8: 0.836, 9: 0.809, 10: 0.773, 11: 0.765, 12: 0.742}, ('rp', True, 'bidir', 'corrective', 'r2', 'rp'): {0: 0.998, 1: 0.988, 2: 0.989, 3: 0.969, 4: 0.938, 5: 0.919, 6: 0.879, 7: 0.864, 8: 0.82, 9: 0.749, 10: 0.712, 11: 0.693, 12: 0.675}, ('lp', False, 'bidir', 'direct', 'r2', 'rp'): {0: 0.997, 1: 0.707, 2: 0.597, 3: 0.562, 4: 0.54, 5: 0.514, 6: 0.524, 8: 0.516, 7: 0.543, 9: 0.552, 10: 0.541, 11: 0.552, 12: 0.552}, ('lp_star', False, 'bidir', 'direct', 'r2', 'rp'): {0: 0.994, 1: 0.877, 2: 0.719, 3: 0.638, 4: 0.576, 5: 0.56, 6: 0.542, 7: 0.519, 8: 0.538, 9: 0.513, 10: 0.51, 11: 0.52, 12: 0.533}, ('rp', False, 'bidir', 'direct', 'r2', 'rp'): {0: 1.0, 1: 0.915, 2: 0.861, 3: 0.803, 4: 0.812, 5: 0.717, 6: 0.719, 7: 0.733, 8: 0.658, 9: 0.635, 10: 0.635, 11: 0.609, 12: 0.66}, ('lp', True, 'cot', 'bidir', 'r2', 'rp'): {0: 0.994, 1: 0.977, 2: 0.935, 3: 0.86, 4: 0.772, 5: 0.7, 6: 0.647, 8: 0.562, 7: 0.599, 9: 0.57, 10: 0.557, 11: 0.539, 12: 0.524}, ('lp_star', True, 'cot', 'bidir', 'r2', 'rp'): {0: 0.991, 1: 0.97, 2: 0.983, 3: 0.944, 4: 0.897, 5: 0.866, 6: 0.822, 7: 0.815, 8: 0.787, 9: 0.771, 10: 0.76, 11: 0.725, 12: 0.714}, ('rp', True, 'cot', 'bidir', 'r2', 'rp'): {0: 0.999, 1: 0.997, 2: 0.994, 3: 0.971, 4: 0.941, 5: 0.887, 6: 0.857, 7: 0.803, 8: 0.753, 9: 0.665, 10: 0.666, 11: 0.612, 12: 0.573}, ('lp', False, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.998, 1: 0.975, 2: 0.932, 3: 0.827, 4: 0.713, 5: 0.614, 6: 0.544, 8: 0.485, 7: 0.492, 9: 0.531, 10: 0.546, 11: 0.521, 12: 0.499}, ('lp_star', False, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.997, 1: 1.0, 2: 0.992, 3: 0.957, 4: 0.911, 5: 0.813, 6: 0.776, 7: 0.736, 8: 0.709, 9: 0.706, 10: 0.696, 11: 0.685, 12: 0.691}, ('rp', False, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 1.0, 1: 1.0, 2: 0.994, 3: 0.988, 4: 0.965, 5: 0.947, 6: 0.923, 7: 0.875, 8: 0.822, 9: 0.782, 10: 0.731, 11: 0.703, 12: 0.683}, ('lp', True, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.996, 1: 0.978, 2: 0.959, 3: 0.906, 4: 0.819, 5: 0.693, 6: 0.618, 8: 0.572, 7: 0.599, 9: 0.558, 10: 0.531, 11: 0.523, 12: 0.513}, ('lp_star', True, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 0.995, 1: 0.982, 2: 0.984, 3: 0.96, 4: 0.922, 5: 0.872, 6: 0.818, 7: 0.788, 8: 0.772, 9: 0.738, 10: 0.718, 11: 0.701, 12: 0.691}, ('rp', True, 'cot', 'bidir', 'r2', 'rp', 'direct'): {0: 1.0, 1: 0.991, 2: 0.987, 3: 0.967, 4: 0.949, 5: 0.916, 6: 0.844, 7: 0.813, 8: 0.775, 9: 0.708, 10: 0.68, 11: 0.632, 12: 0.601}}
-print(generate_main_tables(raw_scores_baseline_deep_30 | raw_scores_mixed_deep_30, raw_scores_baseline_deep_60 | raw_scores_mixed_deep_60))
+# print(generate_main_tables(raw_scores_baseline_deep_30 | raw_scores_mixed_deep_30, raw_scores_baseline_deep_60 | raw_scores_mixed_deep_60))
+
+###### r2 dataset size ablation ######
+# print("raw_scores_r2half_seeds_deep_30=", get_raw_scores([x for x in repo.entries if {'rp', 'r2half'} <= x.tags], pred_count=30))
+raw_scores_r2half_seeds_deep_30= {('lp', False, 'r2half', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.993, 2: 0.959, 3: 0.86, 4: 0.756, 5: 0.698, 6: 0.6, 7: 0.592, 8: 0.59, 9: 0.585, 10: 0.602, 11: 0.609, 12: 0.612}, ('lp_star', False, 'r2half', 'corrective', 'rp', 'bidir'): {0: 0.999, 1: 1.0, 2: 0.999, 3: 0.986, 4: 0.962, 5: 0.921, 6: 0.865, 7: 0.847, 8: 0.811, 9: 0.817, 10: 0.819, 11: 0.818, 12: 0.797}, ('rp', False, 'r2half', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 0.997, 3: 0.988, 4: 0.976, 5: 0.957, 6: 0.925, 7: 0.887, 8: 0.83, 9: 0.756, 10: 0.678, 11: 0.68, 12: 0.636}, ('lp', True, 'r2half', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.999, 2: 0.991, 3: 0.957, 4: 0.882, 5: 0.845, 6: 0.797, 7: 0.808, 8: 0.745, 9: 0.748, 10: 0.726, 11: 0.713, 12: 0.695}, ('lp_star', True, 'r2half', 'corrective', 'rp', 'bidir'): {0: 0.999, 1: 0.996, 2: 0.997, 3: 0.994, 4: 0.99, 5: 0.991, 6: 0.973, 7: 0.965, 8: 0.958, 9: 0.967, 10: 0.943, 11: 0.944, 12: 0.944}, ('rp', True, 'r2half', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 0.997, 5: 0.989, 6: 0.975, 7: 0.96, 8: 0.938, 9: 0.904, 10: 0.864, 11: 0.852, 12: 0.804}, ('lp', False, 'r2half', 'seed124', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.993, 2: 0.968, 3: 0.875, 4: 0.775, 5: 0.712, 6: 0.659, 7: 0.64, 8: 0.621, 9: 0.65, 10: 0.635, 11: 0.659, 12: 0.649}, ('lp_star', False, 'r2half', 'seed124', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.992, 4: 0.966, 5: 0.92, 6: 0.849, 7: 0.826, 8: 0.801, 9: 0.799, 10: 0.821, 11: 0.805, 12: 0.804}, ('rp', False, 'r2half', 'seed124', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 0.996, 3: 0.995, 4: 0.977, 5: 0.962, 6: 0.891, 7: 0.831, 8: 0.756, 9: 0.679, 10: 0.602, 11: 0.602, 12: 0.57}, ('lp', True, 'r2half', 'seed124', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.997, 2: 0.993, 3: 0.964, 4: 0.907, 5: 0.868, 6: 0.826, 7: 0.821, 8: 0.809, 9: 0.771, 10: 0.787, 11: 0.753, 12: 0.724}, ('lp_star', True, 'r2half', 'seed124', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.999, 2: 1.0, 3: 0.998, 4: 0.995, 5: 0.985, 6: 0.979, 7: 0.961, 8: 0.964, 9: 0.97, 10: 0.962, 11: 0.964, 12: 0.96}, ('rp', True, 'r2half', 'seed124', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.998, 4: 0.996, 5: 0.987, 6: 0.983, 7: 0.976, 8: 0.94, 9: 0.908, 10: 0.879, 11: 0.854, 12: 0.838}, ('lp', False, 'r2half', 'corrective', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 0.988, 2: 0.952, 3: 0.908, 4: 0.799, 5: 0.727, 6: 0.653, 7: 0.657, 8: 0.6, 9: 0.598, 10: 0.607, 11: 0.621, 12: 0.613}, ('lp_star', False, 'r2half', 'corrective', 'seed125', 'rp', 'bidir'): {0: 0.997, 1: 0.998, 2: 0.998, 3: 0.996, 4: 0.958, 5: 0.908, 6: 0.834, 7: 0.792, 8: 0.744, 9: 0.737, 10: 0.712, 11: 0.717, 12: 0.697}, ('rp', False, 'r2half', 'corrective', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 0.998, 2: 0.998, 3: 0.993, 4: 0.981, 5: 0.958, 6: 0.94, 7: 0.901, 8: 0.835, 9: 0.753, 10: 0.671, 11: 0.65, 12: 0.614}, ('lp', True, 'r2half', 'corrective', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 0.998, 2: 0.993, 3: 0.975, 4: 0.942, 5: 0.889, 6: 0.855, 7: 0.86, 8: 0.814, 9: 0.835, 10: 0.805, 11: 0.806, 12: 0.802}, ('lp_star', True, 'r2half', 'corrective', 'seed125', 'rp', 'bidir'): {0: 0.991, 1: 0.988, 2: 0.998, 3: 0.998, 4: 0.998, 5: 0.993, 6: 0.994, 7: 0.992, 8: 0.981, 9: 0.975, 10: 0.971, 11: 0.967, 12: 0.963}, ('rp', True, 'r2half', 'corrective', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.998, 4: 0.997, 5: 0.995, 6: 0.984, 7: 0.979, 8: 0.957, 9: 0.937, 10: 0.926, 11: 0.913, 12: 0.884}}
+# print("raw_scores_r2half_seeds_deep_60=", get_raw_scores([x for x in repo.entries if {'rp', 'r2half'} <= x.tags], pred_count=60))
+raw_scores_r2half_seeds_deep_60= {('lp', False, 'corrective', 'rp', 'r2half', 'bidir'): {0: 0.996, 1: 0.97, 2: 0.91, 3: 0.75, 4: 0.645, 5: 0.547, 6: 0.545, 8: 0.514, 7: 0.483, 9: 0.525, 10: 0.526, 11: 0.522, 12: 0.528}, ('lp_star', False, 'corrective', 'rp', 'r2half', 'bidir'): {0: 0.996, 1: 0.978, 2: 0.968, 3: 0.906, 4: 0.856, 5: 0.776, 6: 0.734, 7: 0.698, 8: 0.675, 9: 0.687, 10: 0.674, 11: 0.675, 12: 0.683}, ('rp', False, 'corrective', 'rp', 'r2half', 'bidir'): {0: 0.984, 1: 0.963, 2: 0.965, 3: 0.94, 4: 0.93, 5: 0.876, 6: 0.85, 7: 0.802, 8: 0.729, 9: 0.694, 10: 0.657, 11: 0.641, 12: 0.619}, ('lp', True, 'corrective', 'rp', 'r2half', 'bidir'): {0: 0.999, 1: 0.972, 2: 0.933, 3: 0.874, 4: 0.767, 5: 0.69, 6: 0.662, 8: 0.579, 7: 0.587, 9: 0.554, 10: 0.553, 11: 0.529, 12: 0.521}, ('lp_star', True, 'corrective', 'rp', 'r2half', 'bidir'): {0: 0.993, 1: 0.961, 2: 0.963, 3: 0.931, 4: 0.883, 5: 0.86, 6: 0.828, 7: 0.781, 8: 0.765, 9: 0.744, 10: 0.694, 11: 0.693, 12: 0.683}, ('rp', True, 'corrective', 'rp', 'r2half', 'bidir'): {0: 0.997, 1: 0.996, 2: 0.989, 3: 0.972, 4: 0.949, 5: 0.908, 6: 0.851, 7: 0.795, 8: 0.756, 9: 0.686, 10: 0.65, 11: 0.624, 12: 0.601}, ('lp', False, 'bidir', 'rp', 'r2half', 'seed124', 'corrective'): {0: 1.0, 1: 0.992, 2: 0.941, 3: 0.8, 4: 0.713, 5: 0.628, 6: 0.57, 8: 0.523, 7: 0.541, 9: 0.568, 10: 0.572, 11: 0.57, 12: 0.589}, ('lp_star', False, 'bidir', 'rp', 'r2half', 'seed124', 'corrective'): {0: 1.0, 1: 0.999, 2: 1.0, 3: 0.942, 4: 0.888, 5: 0.798, 6: 0.746, 7: 0.731, 8: 0.696, 9: 0.684, 10: 0.7, 11: 0.699, 12: 0.708}, ('rp', False, 'bidir', 'rp', 'r2half', 'seed124', 'corrective'): {0: 1.0, 1: 0.998, 2: 1.0, 3: 0.984, 4: 0.973, 5: 0.93, 6: 0.866, 7: 0.818, 8: 0.739, 9: 0.686, 10: 0.645, 11: 0.598, 12: 0.587}, ('lp', True, 'bidir', 'rp', 'r2half', 'seed124', 'corrective'): {0: 0.998, 1: 0.978, 2: 0.943, 3: 0.881, 4: 0.797, 5: 0.69, 6: 0.671, 8: 0.583, 7: 0.628, 9: 0.566, 10: 0.581, 11: 0.572, 12: 0.551}, ('lp_star', True, 'bidir', 'rp', 'r2half', 'seed124', 'corrective'): {0: 0.999, 1: 0.986, 2: 0.992, 3: 0.95, 4: 0.923, 5: 0.873, 6: 0.821, 7: 0.802, 8: 0.797, 9: 0.758, 10: 0.734, 11: 0.736, 12: 0.707}, ('rp', True, 'bidir', 'rp', 'r2half', 'seed124', 'corrective'): {0: 0.995, 1: 0.966, 2: 0.977, 3: 0.96, 4: 0.935, 5: 0.903, 6: 0.862, 7: 0.829, 8: 0.784, 9: 0.721, 10: 0.673, 11: 0.647, 12: 0.618}, ('lp', False, 'bidir', 'seed125', 'rp', 'r2half', 'corrective'): {0: 0.998, 1: 0.971, 2: 0.918, 3: 0.811, 4: 0.716, 5: 0.63, 6: 0.564, 8: 0.537, 7: 0.526, 9: 0.552, 10: 0.569, 11: 0.549, 12: 0.55}, ('lp_star', False, 'bidir', 'seed125', 'rp', 'r2half', 'corrective'): {0: 0.996, 1: 0.967, 2: 0.969, 3: 0.915, 4: 0.847, 5: 0.774, 6: 0.689, 7: 0.647, 8: 0.638, 9: 0.614, 10: 0.606, 11: 0.604, 12: 0.61}, ('rp', False, 'bidir', 'seed125', 'rp', 'r2half', 'corrective'): {0: 0.999, 1: 1.0, 2: 0.996, 3: 0.976, 4: 0.965, 5: 0.922, 6: 0.888, 7: 0.829, 8: 0.782, 9: 0.699, 10: 0.675, 11: 0.631, 12: 0.608}, ('lp', True, 'bidir', 'seed125', 'rp', 'r2half', 'corrective'): {0: 0.992, 1: 0.98, 2: 0.937, 3: 0.891, 4: 0.805, 5: 0.7, 6: 0.696, 8: 0.609, 7: 0.658, 9: 0.595, 10: 0.591, 11: 0.582, 12: 0.542}, ('lp_star', True, 'bidir', 'seed125', 'rp', 'r2half', 'corrective'): {0: 0.987, 1: 0.955, 2: 0.966, 3: 0.925, 4: 0.903, 5: 0.873, 6: 0.835, 7: 0.803, 8: 0.793, 9: 0.741, 10: 0.708, 11: 0.707, 12: 0.669}, ('rp', True, 'bidir', 'seed125', 'rp', 'r2half', 'corrective'): {0: 0.998, 1: 0.99, 2: 0.983, 3: 0.963, 4: 0.935, 5: 0.891, 6: 0.858, 7: 0.818, 8: 0.792, 9: 0.7, 10: 0.668, 11: 0.637, 12: 0.608}}
+# print("raw_scores_nor2_seeds_deep_30=", get_raw_scores([x for x in repo.entries if {'rp', 'nor2'} <= x.tags], pred_count=30))
+raw_scores_nor2_seeds_deep_30= {('lp', False, 'nor2', 'corrective', 'rp', 'bidir'): {0: 0.993, 1: 0.982, 2: 0.956, 3: 0.818, 4: 0.727, 5: 0.65, 6: 0.547, 7: 0.543, 8: 0.554, 9: 0.567, 10: 0.552, 11: 0.567, 12: 0.54}, ('lp_star', False, 'nor2', 'corrective', 'rp', 'bidir'): {0: 0.999, 1: 0.998, 2: 1.0, 3: 0.985, 4: 0.971, 5: 0.905, 6: 0.836, 7: 0.795, 8: 0.794, 9: 0.747, 10: 0.737, 11: 0.704, 12: 0.68}, ('rp', False, 'nor2', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.999, 2: 0.997, 3: 0.992, 4: 0.984, 5: 0.971, 6: 0.945, 7: 0.91, 8: 0.836, 9: 0.754, 10: 0.664, 11: 0.652, 12: 0.597}, ('lp', True, 'nor2', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.998, 2: 0.99, 3: 0.972, 4: 0.923, 5: 0.885, 6: 0.829, 7: 0.832, 8: 0.766, 9: 0.765, 10: 0.731, 11: 0.731, 12: 0.688}, ('lp_star', True, 'nor2', 'corrective', 'rp', 'bidir'): {0: 0.993, 1: 0.992, 2: 1.0, 3: 0.999, 4: 0.996, 5: 0.991, 6: 0.984, 7: 0.973, 8: 0.979, 9: 0.963, 10: 0.938, 11: 0.946, 12: 0.938}, ('rp', True, 'nor2', 'corrective', 'rp', 'bidir'): {0: 1.0, 1: 0.999, 2: 1.0, 3: 1.0, 4: 0.998, 5: 0.995, 6: 0.985, 7: 0.978, 8: 0.967, 9: 0.957, 10: 0.917, 11: 0.899, 12: 0.851}, ('lp', False, 'seed124', 'corrective', 'nor2', 'rp', 'bidir'): {0: 0.995, 1: 0.917, 2: 0.798, 3: 0.648, 4: 0.554, 5: 0.508, 6: 0.499, 7: 0.497, 8: 0.554, 9: 0.552, 10: 0.557, 11: 0.555, 12: 0.547}, ('lp_star', False, 'seed124', 'corrective', 'nor2', 'rp', 'bidir'): {0: 0.998, 1: 1.0, 2: 0.981, 3: 0.913, 4: 0.859, 5: 0.821, 6: 0.808, 7: 0.797, 8: 0.814, 9: 0.783, 10: 0.786, 11: 0.767, 12: 0.748}, ('rp', False, 'seed124', 'corrective', 'nor2', 'rp', 'bidir'): {0: 0.999, 1: 0.999, 2: 0.982, 3: 0.963, 4: 0.942, 5: 0.913, 6: 0.905, 7: 0.873, 8: 0.832, 9: 0.767, 10: 0.716, 11: 0.692, 12: 0.635}, ('lp', True, 'seed124', 'corrective', 'nor2', 'rp', 'bidir'): {0: 0.999, 1: 0.983, 2: 0.935, 3: 0.875, 4: 0.793, 5: 0.734, 6: 0.7, 7: 0.685, 8: 0.675, 9: 0.648, 10: 0.65, 11: 0.634, 12: 0.64}, ('lp_star', True, 'seed124', 'corrective', 'nor2', 'rp', 'bidir'): {0: 0.999, 1: 0.997, 2: 0.989, 3: 0.976, 4: 0.958, 5: 0.936, 6: 0.918, 7: 0.906, 8: 0.893, 9: 0.884, 10: 0.855, 11: 0.844, 12: 0.843}, ('rp', True, 'seed124', 'corrective', 'nor2', 'rp', 'bidir'): {0: 0.999, 1: 0.999, 2: 1.0, 3: 0.988, 4: 0.984, 5: 0.968, 6: 0.936, 7: 0.936, 8: 0.91, 9: 0.844, 10: 0.792, 11: 0.763, 12: 0.737}, ('lp', False, 'corrective', 'nor2', 'seed125', 'rp', 'bidir'): {0: 0.996, 1: 0.981, 2: 0.947, 3: 0.817, 4: 0.692, 5: 0.604, 6: 0.526, 7: 0.511, 8: 0.497, 9: 0.537, 10: 0.552, 11: 0.558, 12: 0.568}, ('lp_star', False, 'corrective', 'nor2', 'seed125', 'rp', 'bidir'): {0: 0.998, 1: 1.0, 2: 1.0, 3: 0.988, 4: 0.98, 5: 0.924, 6: 0.878, 7: 0.843, 8: 0.828, 9: 0.824, 10: 0.819, 11: 0.799, 12: 0.772}, ('rp', False, 'corrective', 'nor2', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 0.999, 2: 0.998, 3: 0.988, 4: 0.985, 5: 0.964, 6: 0.954, 7: 0.924, 8: 0.866, 9: 0.799, 10: 0.703, 11: 0.68, 12: 0.617}, ('lp', True, 'corrective', 'nor2', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 0.998, 2: 0.991, 3: 0.971, 4: 0.913, 5: 0.872, 6: 0.823, 7: 0.825, 8: 0.787, 9: 0.758, 10: 0.738, 11: 0.717, 12: 0.662}, ('lp_star', True, 'corrective', 'nor2', 'seed125', 'rp', 'bidir'): {0: 0.992, 1: 0.998, 2: 0.998, 3: 0.994, 4: 0.995, 5: 0.995, 6: 0.979, 7: 0.979, 8: 0.974, 9: 0.967, 10: 0.966, 11: 0.954, 12: 0.949}, ('rp', True, 'corrective', 'nor2', 'seed125', 'rp', 'bidir'): {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 0.998, 5: 0.996, 6: 0.988, 7: 0.987, 8: 0.966, 9: 0.956, 10: 0.929, 11: 0.92, 12: 0.882}}
+# print("raw_scores_nor2_seeds_deep_60=", get_raw_scores([x for x in repo.entries if {'rp', 'nor2'} <= x.tags], pred_count=60))
+raw_scores_nor2_seeds_deep_60= {('lp', False, 'nor2', 'rp', 'corrective', 'bidir'): {0: 0.987, 1: 0.948, 2: 0.898, 3: 0.728, 4: 0.648, 5: 0.53, 6: 0.484, 8: 0.457, 7: 0.468, 9: 0.489, 10: 0.478, 11: 0.472, 12: 0.504}, ('lp_star', False, 'nor2', 'rp', 'corrective', 'bidir'): {0: 0.997, 1: 0.988, 2: 0.983, 3: 0.896, 4: 0.829, 5: 0.731, 6: 0.667, 7: 0.641, 8: 0.64, 9: 0.617, 10: 0.589, 11: 0.595, 12: 0.591}, ('rp', False, 'nor2', 'rp', 'corrective', 'bidir'): {0: 0.999, 1: 0.998, 2: 0.996, 3: 0.983, 4: 0.977, 5: 0.946, 6: 0.899, 7: 0.861, 8: 0.769, 9: 0.699, 10: 0.667, 11: 0.613, 12: 0.574}, ('lp', True, 'nor2', 'rp', 'corrective', 'bidir'): {0: 0.996, 1: 0.971, 2: 0.947, 3: 0.873, 4: 0.778, 5: 0.665, 6: 0.641, 8: 0.546, 7: 0.58, 9: 0.53, 10: 0.502, 11: 0.489, 12: 0.505}, ('lp_star', True, 'nor2', 'rp', 'corrective', 'bidir'): {0: 0.985, 1: 0.97, 2: 0.98, 3: 0.935, 4: 0.896, 5: 0.851, 6: 0.808, 7: 0.764, 8: 0.747, 9: 0.715, 10: 0.671, 11: 0.665, 12: 0.618}, ('rp', True, 'nor2', 'rp', 'corrective', 'bidir'): {0: 0.999, 1: 0.984, 2: 0.99, 3: 0.98, 4: 0.965, 5: 0.928, 6: 0.869, 7: 0.856, 8: 0.797, 9: 0.724, 10: 0.665, 11: 0.636, 12: 0.586}, ('lp', False, 'bidir', 'nor2', 'rp', 'seed124', 'corrective'): {0: 0.972, 1: 0.887, 2: 0.753, 3: 0.604, 4: 0.55, 5: 0.526, 6: 0.522, 8: 0.491, 7: 0.501, 9: 0.505, 10: 0.505, 11: 0.482, 12: 0.487}, ('lp_star', False, 'bidir', 'nor2', 'rp', 'seed124', 'corrective'): {0: 0.999, 1: 0.977, 2: 0.928, 3: 0.803, 4: 0.744, 5: 0.699, 6: 0.687, 7: 0.68, 8: 0.697, 9: 0.683, 10: 0.682, 11: 0.67, 12: 0.689}, ('rp', False, 'bidir', 'nor2', 'rp', 'seed124', 'corrective'): {0: 0.996, 1: 0.995, 2: 0.973, 3: 0.956, 4: 0.942, 5: 0.878, 6: 0.852, 7: 0.824, 8: 0.771, 9: 0.735, 10: 0.666, 11: 0.65, 12: 0.611}, ('lp', True, 'bidir', 'nor2', 'rp', 'seed124', 'corrective'): {0: 1.0, 1: 0.941, 2: 0.868, 3: 0.768, 4: 0.673, 5: 0.603, 6: 0.566, 8: 0.511, 7: 0.539, 9: 0.508, 10: 0.507, 11: 0.502, 12: 0.493}, ('lp_star', True, 'bidir', 'nor2', 'rp', 'seed124', 'corrective'): {0: 1.0, 1: 0.981, 2: 0.946, 3: 0.883, 4: 0.824, 5: 0.787, 6: 0.744, 7: 0.715, 8: 0.72, 9: 0.683, 10: 0.661, 11: 0.64, 12: 0.648}, ('rp', True, 'bidir', 'nor2', 'rp', 'seed124', 'corrective'): {0: 1.0, 1: 0.997, 2: 0.989, 3: 0.952, 4: 0.924, 5: 0.872, 6: 0.815, 7: 0.791, 8: 0.715, 9: 0.669, 10: 0.634, 11: 0.63, 12: 0.597}, ('lp', False, 'bidir', 'nor2', 'seed125', 'rp', 'corrective'): {0: 0.981, 1: 0.955, 2: 0.904, 3: 0.716, 4: 0.61, 5: 0.527, 6: 0.46, 8: 0.457, 7: 0.475, 9: 0.496, 10: 0.486, 11: 0.499, 12: 0.482}, ('lp_star', False, 'bidir', 'nor2', 'seed125', 'rp', 'corrective'): {0: 0.99, 1: 0.996, 2: 0.988, 3: 0.915, 4: 0.86, 5: 0.79, 6: 0.733, 7: 0.698, 8: 0.707, 9: 0.691, 10: 0.685, 11: 0.693, 12: 0.689}, ('rp', False, 'bidir', 'nor2', 'seed125', 'rp', 'corrective'): {0: 0.999, 1: 0.999, 2: 0.997, 3: 0.982, 4: 0.964, 5: 0.935, 6: 0.9, 7: 0.846, 8: 0.806, 9: 0.718, 10: 0.681, 11: 0.631, 12: 0.608}, ('lp', True, 'bidir', 'nor2', 'seed125', 'rp', 'corrective'): {0: 0.995, 1: 0.965, 2: 0.941, 3: 0.886, 4: 0.781, 5: 0.686, 6: 0.635, 8: 0.56, 7: 0.59, 9: 0.537, 10: 0.523, 11: 0.514, 12: 0.508}, ('lp_star', True, 'bidir', 'nor2', 'seed125', 'rp', 'corrective'): {0: 0.99, 1: 0.979, 2: 0.977, 3: 0.952, 4: 0.916, 5: 0.882, 6: 0.822, 7: 0.804, 8: 0.788, 9: 0.75, 10: 0.722, 11: 0.701, 12: 0.688}, ('rp', True, 'bidir', 'nor2', 'seed125', 'rp', 'corrective'): {0: 0.999, 1: 0.988, 2: 0.988, 3: 0.97, 4: 0.944, 5: 0.92, 6: 0.879, 7: 0.842, 8: 0.794, 9: 0.72, 10: 0.715, 11: 0.664, 12: 0.635}}
+r2_impact_30 = raw_scores_baseline_seeds_deep_30 | raw_scores_r2half_seeds_deep_30 | raw_scores_nor2_seeds_deep_30
+r2_impact_60 = raw_scores_baseline_seeds_deep_60 | raw_scores_r2half_seeds_deep_60 | raw_scores_nor2_seeds_deep_60
+# print(generate_r2_ablation_tables(r2_impact_30, r2_impact_60))
+
 
 ###### Small ######
 # print("raw_scores_small=", get_ablation_scores([x for x in repo.entries if {'rp', 'small'} <= x.tags], include_cot=False))
@@ -1213,3 +1315,16 @@ cot_30_scaling = {x:y for x, y in (raw_scores_baseline_deep_30 | raw_scores_scal
 # plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="lp", compare="mode", cls="p30", curve="layers")
 # plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="rp", compare="mode", cls="p30", curve="heads")
 # plot_scaling_curves(direct_30_scaling, cot_30_scaling, eval="lp", compare="mode", cls="p30", curve="heads")
+
+###### Tractability ######
+
+# print("raw_scores_tractability_deep_30=", get_raw_scores([x for x in repo.entries if {'rp', 'tractability'} <= x.tags], pred_count=30))
+raw_scores_tractability_deep_30= {('lp', False, 'rp', 'direct', 'r2', 'bidir', 'tractability'): {0: 1.0, 1: 0.734, 2: 0.626, 3: 0.588, 4: 0.556, 5: 0.533, 6: 0.556, 7: 0.546, 8: 0.552, 9: 0.543, 10: 0.539, 11: 0.527, 12: 0.524}, ('lp_star', False, 'rp', 'direct', 'r2', 'bidir', 'tractability'): {0: 1.0, 1: 0.927, 2: 0.746, 3: 0.66, 4: 0.63, 5: 0.604, 6: 0.578, 7: 0.583, 8: 0.565, 9: 0.554, 10: 0.547, 11: 0.518, 12: 0.54}, ('rp', False, 'rp', 'direct', 'r2', 'bidir', 'tractability'): {0: 1.0, 1: 0.904, 2: 0.868, 3: 0.816, 4: 0.785, 5: 0.751, 6: 0.705, 7: 0.73, 8: 0.74, 9: 0.754, 10: 0.692, 11: 0.715, 12: 0.74}, ('lp', False, 'rp', 'direct', 'layers=16', 'r2', 'bidir', 'tractability'): {0: 0.569, 1: 0.561, 2: 0.547, 3: 0.542, 4: 0.508, 5: 0.523, 6: 0.524, 7: 0.498, 8: 0.514, 9: 0.505, 10: 0.504, 11: 0.507, 12: 0.497}, ('lp_star', False, 'rp', 'direct', 'layers=16', 'r2', 'bidir', 'tractability'): {0: 0.376, 1: 0.578, 2: 0.51, 3: 0.548, 4: 0.522, 5: 0.515, 6: 0.505, 7: 0.483, 8: 0.497, 9: 0.512, 10: 0.511, 11: 0.499, 12: 0.508}, ('rp', False, 'rp', 'direct', 'layers=16', 'r2', 'bidir', 'tractability'): {0: 0.631, 1: 0.561, 2: 0.5, 3: 0.49, 4: 0.502, 5: 0.493, 6: 0.482, 7: 0.501, 8: 0.511, 9: 0.493, 10: 0.506, 11: 0.478, 12: 0.49}, ('lp', False, 'rp', 'direct', 'r2', 'layers=32', 'bidir', 'tractability'): {0: 1.0, 1: 0.656, 2: 0.56, 3: 0.536, 4: 0.513, 5: 0.504, 6: 0.54, 7: 0.521, 8: 0.529, 9: 0.515, 10: 0.516, 11: 0.508, 12: 0.498}, ('lp_star', False, 'rp', 'direct', 'r2', 'layers=32', 'bidir', 'tractability'): {0: 0.991, 1: 0.753, 2: 0.657, 3: 0.605, 4: 0.573, 5: 0.561, 6: 0.55, 7: 0.544, 8: 0.517, 9: 0.554, 10: 0.551, 11: 0.504, 12: 0.51}, ('rp', False, 'rp', 'direct', 'r2', 'layers=32', 'bidir', 'tractability'): {0: 1.0, 1: 0.882, 2: 0.844, 3: 0.819, 4: 0.779, 5: 0.738, 6: 0.728, 7: 0.738, 8: 0.74, 9: 0.75, 10: 0.728, 11: 0.758, 12: 0.749}}
+# print("raw_scores_tractability_deep_60=", get_raw_scores([x for x in repo.entries if {'rp', 'tractability'} <= x.tags], pred_count=60))
+raw_scores_tractability_deep_60= {('lp', False, 'rp', 'direct', 'r2', 'bidir', 'tractability'): {0: 0.997, 1: 0.707, 2: 0.597, 3: 0.562, 4: 0.54, 5: 0.514, 6: 0.524, 8: 0.516, 7: 0.543, 9: 0.552, 10: 0.541, 11: 0.552, 12: 0.552}, ('lp_star', False, 'rp', 'direct', 'r2', 'bidir', 'tractability'): {0: 0.994, 1: 0.877, 2: 0.719, 3: 0.638, 4: 0.576, 5: 0.56, 6: 0.542, 7: 0.519, 8: 0.538, 9: 0.513, 10: 0.51, 11: 0.52, 12: 0.533}, ('rp', False, 'rp', 'direct', 'r2', 'bidir', 'tractability'): {0: 1.0, 1: 0.915, 2: 0.861, 3: 0.803, 4: 0.812, 5: 0.717, 6: 0.719, 7: 0.733, 8: 0.658, 9: 0.635, 10: 0.635, 11: 0.609, 12: 0.66}, ('lp', False, 'rp', 'direct', 'layers=16', 'r2', 'bidir', 'tractability'): {0: 0.558, 1: 0.522, 2: 0.531, 3: 0.493, 4: 0.523, 5: 0.551, 6: 0.538, 8: 0.532, 7: 0.535, 9: 0.559, 10: 0.561, 11: 0.568, 12: 0.526}, ('lp_star', False, 'rp', 'direct', 'layers=16', 'r2', 'bidir', 'tractability'): {0: 0.371, 1: 0.527, 2: 0.521, 3: 0.532, 4: 0.518, 5: 0.503, 6: 0.554, 7: 0.504, 8: 0.505, 9: 0.484, 10: 0.487, 11: 0.527, 12: 0.503}, ('rp', False, 'rp', 'direct', 'layers=16', 'r2', 'bidir', 'tractability'): {0: 0.712, 1: 0.547, 2: 0.473, 3: 0.455, 4: 0.47, 5: 0.439, 6: 0.443, 7: 0.469, 8: 0.45, 9: 0.453, 10: 0.487, 11: 0.455, 12: 0.475}, ('lp', False, 'rp', 'direct', 'r2', 'layers=32', 'bidir', 'tractability'): {0: 0.999, 1: 0.613, 2: 0.562, 3: 0.517, 4: 0.487, 5: 0.473, 6: 0.496, 8: 0.488, 7: 0.497, 9: 0.495, 10: 0.493, 11: 0.509, 12: 0.514}, ('lp_star', False, 'rp', 'direct', 'r2', 'layers=32', 'bidir', 'tractability'): {0: 0.994, 1: 0.72, 2: 0.648, 3: 0.563, 4: 0.523, 5: 0.497, 6: 0.506, 7: 0.488, 8: 0.507, 9: 0.485, 10: 0.485, 11: 0.497, 12: 0.537}, ('rp', False, 'rp', 'direct', 'r2', 'layers=32', 'bidir', 'tractability'): {0: 1.0, 1: 0.887, 2: 0.833, 3: 0.802, 4: 0.786, 5: 0.743, 6: 0.742, 7: 0.724, 8: 0.668, 9: 0.689, 10: 0.652, 11: 0.647, 12: 0.688}}
+print(generate_main_tables(raw_scores_tractability_deep_30, raw_scores_tractability_deep_60, methods=['direct']))
+
+scaling_tractability_30 = raw_scores_baseline_deep_30 | filter_scaling_scores(raw_scores_scaling_deep_30, take_layers=[16, 32])
+direct_30_tractability = {x:y for x, y in scaling_tractability_30.items() if x[1] == False}
+# plot_scaling_curves(raw_scores_tractability_deep_30, direct_30_tractability, eval="rp", compare="corrective", cls="tractability", curve="layers")
+# plot_scaling_curves(raw_scores_tractability_deep_30, direct_30_tractability, eval="lp", compare="corrective", cls="tractability", curve="layers")

@@ -35,6 +35,16 @@ python3 -u training/train_predicate_transformer.py --pickled_dataset=True --trai
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --seed=125
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --ffn_enabled=True --bidirectional_mask=True --seed=125
 
+# r2 matched baseline
+
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --corrective_cot=True --bidirectional_mask=True --seed=124
+python3 -u training/train_predicate_transformer.py --train_distribution=rp --heuristics_enabled=False --corrective_cot=True --bidirectional_mask=True --seed=125
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dataset_fraction=0.5
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dataset_fraction=0.5 --seed=124
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dataset_fraction=0.5 --seed=125
+
+
 # scaling
 
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --epochs=30
@@ -52,6 +62,11 @@ python3 -u training/train_predicate_transformer.py --pickled_dataset=True --trai
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --gradient_checkpointing=True --dim=1024 --n_heads=16
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=128 --n_heads=2
 python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --corrective_cot=True --bidirectional_mask=True --dim=64 --n_heads=1
+
+# corrective tractable
+
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=16
+python3 -u training/train_predicate_transformer.py --pickled_dataset=True --train_distribution=rp --direct=True         --bidirectional_mask=True --n_layers=32 --gradient_checkpointing=True
 
 
 # shallow

@@ -173,6 +173,20 @@ def train_curriculum(ds: Dataset, select_by_depth=None, eager=True, heuristics=[
             raise RuntimeError(f"unknown: {heuristic_placement}")
     return train_ds
 
+def reduce_ds(ds, fraction):
+    if fraction >= 1.0:
+        return ds
+
+    unique_ids = set(elem["id"] for elem in ds)
+    sorted_ids = sorted(list(unique_ids))
+    target_idx = int(len(sorted_ids) * fraction)
+    if target_idx == 0:
+        return []
+
+    threshold_id = sorted_ids[target_idx - 1]
+    allowed_ids = set(i for i in unique_ids if i <= threshold_id)
+    print(f"reduce_ds total: {len(unique_ids)} allowed: {len(allowed_ids)} cutoff: {threshold_id}")
+    return [elem for elem in ds if elem["id"] in allowed_ids]
 
 def finalize_ds(ds, custom_data_shuffle=False):
     if custom_data_shuffle:
@@ -221,8 +235,7 @@ def prepare_ds_train(raw_ds, rl_frac=0, custom_data_shuffle=False, corrective_co
                        "id": data["id"],
                        "input_ids": data["input"]["ids"] + [direct_answer] + data["direct"]["ids"] + [cot_answer] + data["cot"]["ids"],
                        "type_embeddings": data["input"]["type_embeddings"] + [[null_e, task_e]] + data["direct"]["type_embeddings"] + [[null_e, task_e]] + data["cot"]["type_embeddings"],
-                       "labels": data["input"]["labels"] + [-100] + data["direct"]["labels"] + [-100] + data["cot"]["labels"]}
-                      )
+                       "labels": data["input"]["labels"] + [-100] + data["direct"]["labels"] + [-100] + data["cot"]["labels"]})
 
         if cot:
             cot_count += 1

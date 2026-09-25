@@ -1,5 +1,34 @@
 
-# Config
+# The Scaling Properties of Implicit Deductive Reasoning in Transformers
+
+Our contributions are as follows:
+- We systematically mitigate shortcut-inducing biases, and improve out-of-distribution performance through the `r2` heuristic, bidirectional prefix masking, and a corrective objective.
+- Within this setting, we find increasing model depth closes the implicit–explicit reasoning gap across graph topologies and problem widths, though CoT remains necessary for depth extrapolation.
+
+![img](scaling_depth.png)
+
+- To advance mechanistic interpretability, we introduce a Procrustes alignment method that factors out orthogonal transformations across layers, revealing that linearly separable features remain topologically consistent and decodable throughout the network.
+
+![img](rp_type_embedding_similarity.png)
+
+![img](rp_token_similarity.png)
+
+In appendix A,
+we also connect the probed features to potentially learned strategies given the computational capacity of model and hardness of the algorithm.
+
+If you find these findings useful, consider referencing this work :)
+
+```bibtex
+@article{vompa2026logic,
+title={The Scaling Properties of Implicit Deductive Reasoning in Transformers},
+author={Enrico Vompa and Tanel Tammet},
+journal={Transactions on Machine Learning Research},
+issn={2835-8856},
+year={2026},
+url={https://openreview.net/forum?id=M91oDrW4i7}}
+```
+
+## Config
 
 `conf.py` contains `EXPERIMENTS_DIR` variable which should be set to the folder with the datasets and models
 
